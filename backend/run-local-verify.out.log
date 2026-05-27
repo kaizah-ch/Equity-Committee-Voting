@@ -1,0 +1,89 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.equitycommittee:voting >---------------------
+[INFO] Building equity-committee-voting 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.4:run (default-cli) > test-compile @ voting >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ voting ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ voting ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ voting ---
+[INFO] skip non existing resourceDirectory C:\projects\equity-committee-voting\backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ voting ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.4:run (default-cli) < test-compile @ voting <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.4:run (default-cli) @ voting ---
+[INFO] Attaching agents: []
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.4)
+
+2026-04-23T16:21:13.299+02:00  INFO 5984 --- [           main] c.e.voting.VotingApplication             : Starting VotingApplication using Java 21.0.6 with PID 5984 (C:\projects\equity-committee-voting\backend\target\classes started by kaiza in C:\projects\equity-committee-voting\backend)
+2026-04-23T16:21:13.302+02:00 DEBUG 5984 --- [           main] c.e.voting.VotingApplication             : Running with Spring Boot v3.2.4, Spring v6.1.5
+2026-04-23T16:21:13.303+02:00  INFO 5984 --- [           main] c.e.voting.VotingApplication             : The following 1 profile is active: "local"
+2026-04-23T16:21:14.274+02:00  INFO 5984 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-23T16:21:14.378+02:00  INFO 5984 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 93 ms. Found 7 JPA repository interfaces.
+2026-04-23T16:21:15.262+02:00  INFO 5984 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-04-23T16:21:15.281+02:00  INFO 5984 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-23T16:21:15.282+02:00  INFO 5984 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-04-23T16:21:15.371+02:00  INFO 5984 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-23T16:21:15.374+02:00  INFO 5984 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2008 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+2026-04-23T16:21:15.513+02:00  INFO 5984 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-23T16:21:15.809+02:00  INFO 5984 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@696b52bc
+2026-04-23T16:21:15.812+02:00  INFO 5984 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-23T16:21:15.937+02:00  INFO 5984 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-04-23T16:21:15.938+02:00  INFO 5984 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-04-23T16:21:15.939+02:00  INFO 5984 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-04-23T16:21:15.959+02:00  INFO 5984 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/postgres (PostgreSQL 17.4)
+2026-04-23T16:21:15.966+02:00  WARN 5984 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 17.4 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-04-23T16:21:16.016+02:00  INFO 5984 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 2 migrations (execution time 00:00.035s)
+2026-04-23T16:21:16.029+02:00  INFO 5984 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 2
+2026-04-23T16:21:16.032+02:00  INFO 5984 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-04-23T16:21:16.151+02:00  INFO 5984 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-23T16:21:16.231+02:00  INFO 5984 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-04-23T16:21:16.277+02:00  INFO 5984 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-23T16:21:16.584+02:00  INFO 5984 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-23T16:21:16.663+02:00  WARN 5984 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-04-23T16:21:18.085+02:00  INFO 5984 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-23T16:21:18.147+02:00  INFO 5984 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-23T16:21:18.624+02:00 DEBUG 5984 --- [           main] c.e.voting.security.JwtAuthFilter        : Filter 'jwtAuthFilter' configured for use
+2026-04-23T16:21:18.856+02:00  INFO 5984 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-23T16:21:20.558+02:00  WARN 5984 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-23T16:21:20.960+02:00  INFO 5984 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@4d19ddeb, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@623dac3, org.springframework.security.web.context.SecurityContextHolderFilter@28322fd3, org.springframework.security.web.header.HeaderWriterFilter@7df09f55, org.springframework.web.filter.CorsFilter@625439ba, org.springframework.security.web.authentication.logout.LogoutFilter@395065af, com.equitycommittee.voting.security.JwtAuthFilter@25c98637, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@556df144, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@58fef400, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@2763500e, org.springframework.security.web.session.SessionManagementFilter@5a618847, org.springframework.security.web.access.ExceptionTranslationFilter@3e7ac200, org.springframework.security.web.access.intercept.AuthorizationFilter@190a5f74]
+2026-04-23T16:21:21.402+02:00  INFO 5984 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2026-04-23T16:21:21.405+02:00  INFO 5984 --- [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-04-23T16:21:21.407+02:00  INFO 5984 --- [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5c65001c]]
+2026-04-23T16:21:21.408+02:00  INFO 5984 --- [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-04-23T16:21:21.419+02:00  INFO 5984 --- [           main] c.e.voting.VotingApplication             : Started VotingApplication in 8.713 seconds (process running for 9.332)
+2026-04-23T16:22:21.391+02:00  INFO 5984 --- [MessageBroker-1] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:18 min
+[INFO] Finished at: 2026-04-23T16:22:27+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.4:run (default-cli) on project voting: Process terminated with exit code: -1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

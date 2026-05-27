@@ -1,0 +1,17 @@
+com\equitycommittee\voting\service\MessageServiceAuthTest.class
+com\equitycommittee\voting\service\PushNotificationServiceTest.class
+com\equitycommittee\voting\service\ImageServiceTest.class
+com\equitycommittee\voting\service\PushNotificationServiceTest$1.class
+com\equitycommittee\voting\config\WebSocketAuthChannelInterceptorTest.class
+com\equitycommittee\voting\api\controller\VoteControllerHttpTest.class
+com\equitycommittee\voting\service\DeviceTokenServiceTest.class
+com\equitycommittee\voting\api\controller\MessageControllerHttpTest.class
+com\equitycommittee\voting\config\S3SmokeIT.class
+com\equitycommittee\voting\service\VotingReminderSchedulerTest.class
+com\equitycommittee\voting\api\controller\CaseControllerHttpTest.class
+com\equitycommittee\voting\api\controller\ImageControllerTest.class
+com\equitycommittee\voting\api\controller\NotificationControllerTest.class
+com\equitycommittee\voting\service\NotificationServiceTest.class
+com\equitycommittee\voting\service\VotingServiceAuthTest.class
+com\equitycommittee\voting\config\S3ConfigTest.class
+com\equitycommittee\voting\service\CaseServiceAuthTest.class

@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Backend: VotingApplication",
+      "request": "launch",
+      "mainClass": "com.equitycommittee.voting.VotingApplication",
+      "cwd": "${workspaceFolder}/backend",
+      "args": "--spring.profiles.active=local"
+    }
+  ]
+}

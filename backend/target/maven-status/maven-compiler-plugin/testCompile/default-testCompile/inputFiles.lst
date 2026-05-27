@@ -1,0 +1,16 @@
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\api\controller\CaseControllerHttpTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\api\controller\ImageControllerTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\api\controller\MessageControllerHttpTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\api\controller\NotificationControllerTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\api\controller\VoteControllerHttpTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\config\S3ConfigTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\config\S3SmokeIT.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\config\WebSocketAuthChannelInterceptorTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\CaseServiceAuthTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\DeviceTokenServiceTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\ImageServiceTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\MessageServiceAuthTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\NotificationServiceTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\PushNotificationServiceTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\VotingReminderSchedulerTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\VotingServiceAuthTest.java

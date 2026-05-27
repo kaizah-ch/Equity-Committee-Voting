@@ -1,0 +1,66 @@
+name: equity_committee_voting
+description: Equity Committee Voting Mobile App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_bloc: ^8.1.5
+  equatable: ^2.0.5
+
+  # Networking
+  dio: ^5.4.3+1
+  retrofit: ^4.1.0
+  http_parser: ^4.0.2
+
+  # WebSocket
+  stomp_dart_client: ^2.0.0
+
+  # Firebase
+  firebase_core: ^3.1.0
+  firebase_messaging: ^15.0.1
+
+  # Storage
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.3
+
+  # Image handling
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.2.0
+  cached_network_image: ^3.3.1
+
+  # UI
+  go_router: ^14.1.4
+  intl: ^0.19.0
+  timeago: ^3.6.1
+  shimmer: ^3.0.0
+  badges: ^3.1.2
+
+  # Utils
+  uuid: ^4.4.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+  get_it: ^7.7.0
+  injectable: ^2.4.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  injectable_generator: ^2.6.1
+  retrofit_generator: ^8.1.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/

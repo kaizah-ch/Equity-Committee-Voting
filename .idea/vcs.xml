@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../DocusignLMS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../IMS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../ai-cookbook" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../docusign" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../equity-web-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../erp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../expense-tracker" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../frontierHub" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../frontierLMS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../moved/IMS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../restaurant-operations-system" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../zed-cozy" vcs="Git" />
+  </component>
+</project>

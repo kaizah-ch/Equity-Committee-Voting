@@ -1,0 +1,16 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build output
+backend/target/
+
+# Local logs
+*.log
+
+# Firebase service account credentials
+firebase-service-account*.json
+*service-account*.json
+mobile/android/app/google-services.json
+mobile/ios/Runner/GoogleService-Info.plist

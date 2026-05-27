@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter create *)",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(mvn compile *)",
+      "Bash(where mvn *)",
+      "Bash(where java *)",
+      "Bash(java -version)",
+      "Bash(export PATH=\"/c/Users/kaiza/.maven/maven-3.9.15/bin:$PATH\")",
+      "Bash(export JAVA_HOME=\"C:/Program Files/Common Files/Oracle/Java/javapath\")",
+      "Read(//c/Program Files/Java/**)",
+      "Read(//c/Program Files/Common Files/Oracle/Java/javapath_target_2595703/**)",
+      "Bash(reg query *)",
+      "Bash(export JAVA_HOME=\"C:/Program Files/Java/jdk-21\")",
+      "Bash(mvn wrapper:wrapper)"
+    ]
+  }
+}

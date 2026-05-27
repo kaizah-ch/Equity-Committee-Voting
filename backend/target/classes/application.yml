@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    default: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/equity_voting
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:equity-committee-voting-secret-key-must-be-at-least-256-bits-long}
+    expiration-ms: 86400000       # 24 hours
+    refresh-expiration-ms: 604800000  # 7 days
+
+  s3:
+    bucket: ${S3_BUCKET:equity-committee-voting-images-dev}
+    region: ${S3_REGION:us-east-1}
+    endpoint: ${S3_ENDPOINT:}   # leave blank for AWS; set for S3-compatible (MinIO)
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+    presigned-url-minutes: ${S3_PRESIGNED_URL_MINUTES:15}
+
+  images:
+    max-per-case: 40
+    max-size-mb: 10
+    allowed-content-types: image/jpeg,image/png,image/webp
+
+  firebase:
+    enabled: ${FCM_ENABLED:false}
+    service-account-path: ${FCM_SERVICE_ACCOUNT_PATH:}
+
+logging:
+  level:
+    com.equitycommittee: DEBUG
+    org.springframework.security: INFO
