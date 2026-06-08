@@ -52,6 +52,10 @@ class CaseRepository {
     return CaseModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<void> deleteCase(String id) async {
+    await _dio.delete('cases/$id');
+  }
+
   Future<({List<AuditLogModel> logs, bool hasMore})> getCaseAuditLogs(
     String caseId, {
     int page = 0,

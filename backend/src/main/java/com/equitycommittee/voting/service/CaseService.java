@@ -5,12 +5,17 @@ import com.equitycommittee.voting.api.dto.cases.CreateCaseRequest;
 import com.equitycommittee.voting.api.dto.cases.UpdateCaseRequest;
 import com.equitycommittee.voting.api.dto.cases.UpdateCaseStatusRequest;
 import com.equitycommittee.voting.domain.entity.CaseEntry;
+import com.equitycommittee.voting.domain.entity.CaseImage;
 import com.equitycommittee.voting.domain.entity.User;
 import com.equitycommittee.voting.domain.enums.CaseStatus;
 import com.equitycommittee.voting.domain.enums.Role;
+import com.equitycommittee.voting.domain.repository.AuditLogRepository;
+import com.equitycommittee.voting.domain.repository.CaseImageRepository;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
+import com.equitycommittee.voting.domain.repository.NotificationRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -19,11 +24,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -33,11 +41,18 @@ import java.util.UUID;
 public class CaseService {
 
     private final CaseRepository caseRepository;
+    private final CaseImageRepository imageRepository;
+    private final NotificationRepository notificationRepository;
+    private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final S3Client s3Client;
     private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED_TRANSITIONS = allowedTransitions();
+
+    @Value("${app.s3.bucket}")
+    private String bucket;
 
     @Transactional
     public CaseResponse createCase(CreateCaseRequest req) {
@@ -158,6 +173,30 @@ public class CaseService {
         return response;
     }
 
+    @Transactional
+    public void deleteCase(UUID id) {
+        User actor = currentUser();
+        if (actor.getRole() != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can delete cases");
+        }
+
+        CaseEntry caseEntry = findCaseOrThrow(id);
+        List<String> imageKeys = imageRepository.findByCaseEntryIdOrderBySortOrderAsc(id).stream()
+                .map(CaseImage::getImageUrl)
+                .filter(key -> key != null && !key.isBlank())
+                .toList();
+
+        for (String key : imageKeys) {
+            deleteImageObject(key);
+        }
+
+        notificationRepository.deleteByCaseEntryId(id);
+        auditLogRepository.deleteCaseAuditTrail(id.toString());
+        caseRepository.delete(caseEntry);
+        caseRepository.flush();
+        publishCaseDeleted(id);
+    }
+
     private CaseEntry findCaseOrThrow(UUID id) {
         return caseRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Case not found"));
@@ -262,5 +301,19 @@ public class CaseService {
 
     private void publishCaseListUpdate(CaseResponse response) {
         messagingTemplate.convertAndSend("/topic/cases", response);
+    }
+
+    private void publishCaseDeleted(UUID caseId) {
+        messagingTemplate.convertAndSend("/topic/cases", (Object) Map.of(
+                "caseId", caseId.toString(),
+                "deleted", true
+        ));
+    }
+
+    private void deleteImageObject(String key) {
+        if (key.startsWith("http://") || key.startsWith("https://")) {
+            return;
+        }
+        s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
     }
 }

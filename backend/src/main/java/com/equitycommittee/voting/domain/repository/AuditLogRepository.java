@@ -4,6 +4,7 @@ import com.equitycommittee.voting.domain.entity.AuditLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,4 +29,15 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             nativeQuery = true
     )
     Page<AuditLog> findCaseAuditTrail(@Param("caseId") String caseId, Pageable pageable);
+
+    @Modifying
+    @Query(
+            value = """
+                    DELETE FROM audit_logs a
+                    WHERE (a.entity_type = 'CASE' AND a.entity_id = CAST(:caseId AS uuid))
+                       OR (a.metadata ->> 'caseId' = :caseId)
+                    """,
+            nativeQuery = true
+    )
+    void deleteCaseAuditTrail(@Param("caseId") String caseId);
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../features/auth/bloc/auth_bloc.dart';
@@ -23,6 +24,7 @@ void configureDependencies() {
   getIt.registerSingleton<FlutterSecureStorage>(storage);
 
   final dio = createDioClient(storage);
+  getIt.registerSingleton<Dio>(dio);
 
   getIt.registerSingleton(AuthRepository(dio, storage));
   getIt.registerSingleton(CaseRepository(dio));
@@ -40,6 +42,7 @@ void configureDependencies() {
   getIt.registerFactory(() => CaseBloc(getIt<CaseRepository>()));
   getIt.registerFactory(() => MessageBloc(getIt<MessageRepository>()));
   getIt.registerFactory(() => VotingBloc(getIt<VoteRepository>()));
-  getIt.registerFactory(() => NotificationBloc(getIt<NotificationRepository>()));
+  getIt
+      .registerFactory(() => NotificationBloc(getIt<NotificationRepository>()));
   getIt.registerFactory(() => UserAdminBloc(getIt<UserAdminRepository>()));
 }

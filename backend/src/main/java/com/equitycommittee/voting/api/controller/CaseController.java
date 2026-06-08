@@ -54,4 +54,10 @@ public class CaseController {
             @Valid @RequestBody UpdateCaseStatusRequest request) {
         return ResponseEntity.ok(caseService.updateStatus(id, request));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCase(@PathVariable UUID id) {
+        caseService.deleteCase(id);
+        return ResponseEntity.noContent().build();
+    }
 }

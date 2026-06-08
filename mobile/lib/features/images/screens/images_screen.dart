@@ -34,6 +34,18 @@ class ImageModel {
       );
 }
 
+class _PreparedUploadImage {
+  final File file;
+  final String filename;
+  final MediaType contentType;
+
+  const _PreparedUploadImage({
+    required this.file,
+    required this.filename,
+    required this.contentType,
+  });
+}
+
 class ImagesScreen extends StatefulWidget {
   final String caseId;
   final CaseModel? caseModel;
@@ -54,6 +66,7 @@ class _ImagesScreenState extends State<ImagesScreen>
   static const int _maxImageBytes = AppConstants.maxImageSizeMb * 1024 * 1024;
   static const Duration _presignedUrlRefreshInterval = Duration(minutes: 10);
   static const Duration _imageErrorRefreshCooldown = Duration(seconds: 30);
+  static const Duration _compressionTimeout = Duration(seconds: 20);
 
   final FlutterSecureStorage _storage = getIt<FlutterSecureStorage>();
   List<ImageModel> _images = [];
@@ -135,48 +148,9 @@ class _ImagesScreenState extends State<ImagesScreen>
         builder: (_) => _ImageViewerScreen(
           images: List<ImageModel>.from(_images),
           initialIndex: initialIndex,
-          onUpdateCaption: _updateCaption,
-          canEditCaption: _canMutateImage,
         ),
       ),
     );
-  }
-
-  Future<String?> _promptCaption({String? initialCaption}) async {
-    return showDialog<String?>(
-      context: context,
-      builder: (context) => _CaptionDialog(
-        title: 'Image caption',
-        initialCaption: initialCaption,
-        emptyActionLabel: 'Skip',
-      ),
-    );
-  }
-
-  Future<ImageModel?> _updateCaption(ImageModel image, String caption) async {
-    if (!_canMutateImage(image)) return null;
-    try {
-      final dio = getIt<Dio>();
-      final resp = await dio.patch(
-        'images/${image.id}/caption',
-        data: {'caption': caption},
-      );
-      final updated = ImageModel.fromJson(resp.data as Map<String, dynamic>);
-      if (!mounted) return updated;
-      setState(() {
-        final idx = _images.indexWhere((e) => e.id == image.id);
-        if (idx >= 0) {
-          _images[idx] = updated;
-        }
-      });
-      return updated;
-    } on DioException catch (e) {
-      final message = mapNetworkError(e);
-      if (!mounted) return null;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-      return null;
-    }
   }
 
   Future<void> _deleteImage(ImageModel image) async {
@@ -243,24 +217,37 @@ class _ImagesScreenState extends State<ImagesScreen>
   Future<void> _upload() async {
     if (!_canUploadImages) return;
     if (_uploading) return;
-    if (_images.length >= AppConstants.maxImagesPerCase) {
+    final remainingSlots = AppConstants.maxImagesPerCase - _images.length;
+    if (remainingSlots <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Maximum 40 images reached')));
       return;
     }
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
+    final pickedImages = await picker.pickMultiImage(
       imageQuality: 75,
       maxWidth: 1600,
       maxHeight: 1600,
     );
-    if (picked == null) return;
+    if (pickedImages.isEmpty) return;
     if (!mounted) return;
 
-    final pathLower = picked.path.toLowerCase();
-    final isAllowedType = _allowedExtensions.any(pathLower.endsWith);
-    if (!isAllowedType) {
+    final selectedImages = pickedImages.take(remainingSlots).toList();
+    if (pickedImages.length > remainingSlots) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Only $remainingSlots more image${remainingSlots == 1 ? '' : 's'} can be uploaded.',
+          ),
+        ),
+      );
+    }
+
+    final unsupported = selectedImages.where((image) {
+      final pathLower = image.path.toLowerCase();
+      return !_allowedExtensions.any(pathLower.endsWith);
+    }).toList();
+    if (unsupported.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Unsupported image format. Use JPG, PNG, or WEBP.')),
@@ -274,69 +261,49 @@ class _ImagesScreenState extends State<ImagesScreen>
       _uploadProgress = null;
     });
 
-    final compressed = await _compressForUpload(File(picked.path));
-    if (!mounted) return;
-    if (compressed == null) {
-      setState(() {
-        _uploading = false;
-        _uploadStatus = null;
-        _uploadProgress = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not prepare image for upload.')),
-      );
-      return;
-    }
-
-    final sizeBytes = await compressed.length();
-    if (!mounted) return;
-    if (sizeBytes > _maxImageBytes) {
-      setState(() {
-        _uploading = false;
-        _uploadStatus = null;
-        _uploadProgress = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image exceeds 10 MB limit.')),
-      );
-      return;
-    }
-    final caption = await _promptCaption();
-    if (!mounted) return;
-    if (caption == null) {
-      setState(() {
-        _uploading = false;
-        _uploadStatus = null;
-        _uploadProgress = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _uploadStatus = 'Uploading image...';
-      _uploadProgress = 0;
-    });
+    var uploadedCount = 0;
+    var failedCount = 0;
     try {
-      final dio = getIt<Dio>();
-      final payload = <String, dynamic>{
-        'file': await MultipartFile.fromFile(
-          compressed.path,
-          filename: 'collateral-${DateTime.now().millisecondsSinceEpoch}.jpg',
-          contentType: MediaType('image', 'jpeg'),
-        ),
-      };
-      if (caption.isNotEmpty) {
-        payload['caption'] = caption;
+      for (var index = 0; index < selectedImages.length; index++) {
+        final imageNumber = index + 1;
+        final totalImages = selectedImages.length;
+        if (!mounted) return;
+        setState(() {
+          _uploadStatus = 'Preparing image $imageNumber of $totalImages...';
+          _uploadProgress = index / totalImages;
+        });
+
+        final prepared = await _prepareForUpload(selectedImages[index]);
+        if (!mounted) return;
+        if (prepared == null) {
+          failedCount++;
+          continue;
+        }
+
+        final sizeBytes = await prepared.file.length();
+        if (!mounted) return;
+        if (sizeBytes > _maxImageBytes) {
+          failedCount++;
+          continue;
+        }
+
+        setState(() {
+          _uploadStatus = 'Uploading image $imageNumber of $totalImages...';
+          _uploadProgress = index / totalImages;
+        });
+
+        try {
+          await _uploadPreparedImage(
+            prepared,
+            imageIndex: index,
+            totalImages: totalImages,
+          );
+          uploadedCount++;
+        } on DioException {
+          failedCount++;
+        }
       }
-      final formData = FormData.fromMap(payload);
-      await dio.post(
-        'cases/${widget.caseId}/images',
-        data: formData,
-        onSendProgress: (sent, total) {
-          if (!mounted || total <= 0) return;
-          setState(() => _uploadProgress = sent / total);
-        },
-      );
+
       if (!mounted) return;
       setState(() {
         _uploadStatus = 'Refreshing images...';
@@ -344,9 +311,11 @@ class _ImagesScreenState extends State<ImagesScreen>
       });
       await _load();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Image uploaded')),
-      );
+      final message = failedCount == 0
+          ? '$uploadedCount image${uploadedCount == 1 ? '' : 's'} uploaded'
+          : '$uploadedCount uploaded, $failedCount failed';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } on DioException catch (e) {
       final message = mapNetworkError(e);
       if (!mounted) return;
@@ -361,6 +330,55 @@ class _ImagesScreenState extends State<ImagesScreen>
         });
       }
     }
+  }
+
+  Future<void> _uploadPreparedImage(
+    _PreparedUploadImage prepared, {
+    required int imageIndex,
+    required int totalImages,
+  }) async {
+    final dio = getIt<Dio>();
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        prepared.file.path,
+        filename: prepared.filename,
+        contentType: prepared.contentType,
+      ),
+    });
+    await dio.post(
+      'cases/${widget.caseId}/images',
+      data: formData,
+      onSendProgress: (sent, total) {
+        if (!mounted || total <= 0) return;
+        final currentProgress = sent / total;
+        setState(() {
+          _uploadProgress = (imageIndex + currentProgress) / totalImages;
+        });
+      },
+    );
+  }
+
+  Future<_PreparedUploadImage?> _prepareForUpload(XFile picked) async {
+    final source = File(picked.path);
+    final compressed = await _compressForUpload(source)
+        .timeout(_compressionTimeout, onTimeout: () => null);
+
+    if (compressed != null && await compressed.exists()) {
+      return _PreparedUploadImage(
+        file: compressed,
+        filename: 'collateral-${DateTime.now().millisecondsSinceEpoch}.jpg',
+        contentType: MediaType('image', 'jpeg'),
+      );
+    }
+
+    if (!await source.exists()) return null;
+    if (await source.length() > _maxImageBytes) return null;
+
+    return _PreparedUploadImage(
+      file: source,
+      filename: _uploadFilenameForPath(source.path),
+      contentType: _contentTypeForPath(source.path),
+    );
   }
 
   Future<File?> _compressForUpload(File source) async {
@@ -382,6 +400,26 @@ class _ImagesScreenState extends State<ImagesScreen>
     }
 
     return compressed == null ? null : File(compressed.path);
+  }
+
+  String _uploadFilenameForPath(String path) {
+    final extension = _extensionForPath(path);
+    return 'collateral-${DateTime.now().millisecondsSinceEpoch}$extension';
+  }
+
+  String _extensionForPath(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return '.png';
+    if (lower.endsWith('.webp')) return '.webp';
+    if (lower.endsWith('.jpeg')) return '.jpeg';
+    return '.jpg';
+  }
+
+  MediaType _contentTypeForPath(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.webp')) return MediaType('image', 'webp');
+    return MediaType('image', 'jpeg');
   }
 
   @override
@@ -575,15 +613,10 @@ class _UploadProgressPanel extends StatelessWidget {
 class _ImageViewerScreen extends StatefulWidget {
   final List<ImageModel> images;
   final int initialIndex;
-  final Future<ImageModel?> Function(ImageModel image, String caption)
-      onUpdateCaption;
-  final bool Function(ImageModel image) canEditCaption;
 
   const _ImageViewerScreen({
     required this.images,
     required this.initialIndex,
-    required this.onUpdateCaption,
-    required this.canEditCaption,
   });
 
   @override
@@ -609,154 +642,38 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
     super.dispose();
   }
 
-  Future<void> _editCaption() async {
-    final current = _images[_currentIndex];
-    final caption = await showDialog<String?>(
-      context: context,
-      builder: (context) => _CaptionDialog(
-        title: 'Edit caption',
-        initialCaption: current.caption,
-        emptyActionLabel: 'Clear',
-      ),
-    );
-    if (caption == null || !mounted) return;
-
-    final updated = await widget.onUpdateCaption(current, caption);
-    if (!mounted || updated == null) return;
-    setState(() => _images[_currentIndex] = updated);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final current = _images[_currentIndex];
-    final caption = (current.caption ?? '').trim();
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         title: Text('${_currentIndex + 1}/${widget.images.length}'),
-        actions: [
-          if (widget.canEditCaption(current))
-            IconButton(
-              tooltip: 'Edit caption',
-              onPressed: _editCaption,
-              icon: const Icon(Icons.edit_outlined),
-            ),
-        ],
       ),
-      body: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: _images.length,
-            onPageChanged: (index) => setState(() => _currentIndex = index),
-            itemBuilder: (context, index) {
-              final image = _images[index];
-              return Center(
-                child: InteractiveViewer(
-                  minScale: 0.8,
-                  maxScale: 4.0,
-                  child: Image.network(
-                    image.imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.broken_image_outlined,
-                      color: Colors.white70,
-                      size: 48,
-                    ),
-                  ),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: _images.length,
+        onPageChanged: (index) => setState(() => _currentIndex = index),
+        itemBuilder: (context, index) {
+          final image = _images[index];
+          return Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 4.0,
+              child: Image.network(
+                image.imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white70,
+                  size: 48,
                 ),
-              );
-            },
-          ),
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                caption.isEmpty ? 'No caption' : caption,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
-    );
-  }
-}
-
-class _CaptionDialog extends StatefulWidget {
-  final String title;
-  final String? initialCaption;
-  final String emptyActionLabel;
-
-  const _CaptionDialog({
-    required this.title,
-    required this.initialCaption,
-    required this.emptyActionLabel,
-  });
-
-  @override
-  State<_CaptionDialog> createState() => _CaptionDialogState();
-}
-
-class _CaptionDialogState extends State<_CaptionDialog> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialCaption ?? '');
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _close(String? value) {
-    FocusScope.of(context).unfocus();
-    Navigator.of(context).pop(value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        maxLength: 500,
-        maxLines: 3,
-        textInputAction: TextInputAction.done,
-        decoration: const InputDecoration(
-          hintText: 'Add optional context for this collateral image',
-        ),
-        onSubmitted: (_) => _close(_controller.text.trim()),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => _close(null),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => _close(''),
-          child: Text(widget.emptyActionLabel),
-        ),
-        FilledButton(
-          onPressed: () => _close(_controller.text.trim()),
-          child: const Text('Save'),
-        ),
-      ],
     );
   }
 }

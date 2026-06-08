@@ -4,10 +4,14 @@ import com.equitycommittee.voting.api.dto.cases.CaseResponse;
 import com.equitycommittee.voting.api.dto.cases.CreateCaseRequest;
 import com.equitycommittee.voting.api.dto.cases.UpdateCaseRequest;
 import com.equitycommittee.voting.domain.entity.CaseEntry;
+import com.equitycommittee.voting.domain.entity.CaseImage;
 import com.equitycommittee.voting.domain.entity.User;
 import com.equitycommittee.voting.domain.enums.CaseStatus;
 import com.equitycommittee.voting.domain.enums.Role;
+import com.equitycommittee.voting.domain.repository.AuditLogRepository;
+import com.equitycommittee.voting.domain.repository.CaseImageRepository;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
+import com.equitycommittee.voting.domain.repository.NotificationRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +26,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,6 +49,12 @@ class CaseServiceAuthTest {
     @Mock
     private CaseRepository caseRepository;
     @Mock
+    private CaseImageRepository imageRepository;
+    @Mock
+    private NotificationRepository notificationRepository;
+    @Mock
+    private AuditLogRepository auditLogRepository;
+    @Mock
     private UserRepository userRepository;
     @Mock
     private AuditService auditService;
@@ -50,12 +62,24 @@ class CaseServiceAuthTest {
     private NotificationService notificationService;
     @Mock
     private SimpMessagingTemplate messagingTemplate;
+    @Mock
+    private S3Client s3Client;
 
     private CaseService caseService;
 
     @BeforeEach
     void setUp() {
-        caseService = new CaseService(caseRepository, userRepository, auditService, notificationService, messagingTemplate);
+        caseService = new CaseService(
+                caseRepository,
+                imageRepository,
+                notificationRepository,
+                auditLogRepository,
+                userRepository,
+                auditService,
+                notificationService,
+                messagingTemplate,
+                s3Client
+        );
     }
 
     @AfterEach
@@ -185,6 +209,52 @@ class CaseServiceAuthTest {
         assertNotNull(response.updatedAt());
         verify(caseRepository).saveAndFlush(any(CaseEntry.class));
         verify(messagingTemplate).convertAndSend("/topic/cases", response);
+    }
+
+    @Test
+    void deleteCase_forbiddenForNonAdmin() {
+        UUID actorId = UUID.randomUUID();
+        User actor = user(actorId, Role.COMMITTEE_MEMBER);
+        UUID caseId = UUID.randomUUID();
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(actorId.toString(), null)
+        );
+        when(userRepository.findById(actorId)).thenReturn(Optional.of(actor));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> caseService.deleteCase(caseId));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+        verify(caseRepository, never()).delete(any(CaseEntry.class));
+    }
+
+    @Test
+    void deleteCase_adminDeletesExternalObjectsAndCaseData() {
+        UUID actorId = UUID.randomUUID();
+        User actor = user(actorId, Role.ADMIN);
+        CaseEntry caseEntry = caseEntry(UUID.randomUUID(), CaseStatus.SUBMITTED, actor);
+        CaseImage image = CaseImage.builder()
+                .caseEntry(caseEntry)
+                .uploadedBy(actor)
+                .imageUrl("cases/" + caseEntry.getId() + "/image.jpg")
+                .build();
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(actorId.toString(), null)
+        );
+        when(userRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(caseRepository.findById(caseEntry.getId())).thenReturn(Optional.of(caseEntry));
+        when(imageRepository.findByCaseEntryIdOrderBySortOrderAsc(caseEntry.getId()))
+                .thenReturn(List.of(image));
+
+        caseService.deleteCase(caseEntry.getId());
+
+        verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
+        verify(notificationRepository).deleteByCaseEntryId(caseEntry.getId());
+        verify(auditLogRepository).deleteCaseAuditTrail(caseEntry.getId().toString());
+        verify(caseRepository).delete(caseEntry);
+        verify(caseRepository).flush();
     }
 
     private static User user(UUID id, Role role) {

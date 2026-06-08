@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -27,6 +28,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   CaseModel? _caseModel;
   bool _loading = true;
   bool _updatingStatus = false;
+  bool _deleting = false;
   String? _error;
   String? _currentUserId;
   String? _currentUserRole;
@@ -57,6 +59,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
         _currentUserId != null && _currentUserId == data.createdById;
     return isPrivileged || isCreator;
   }
+
+  bool get _canDeleteCase => _currentUserRole == 'ADMIN' && _caseModel != null;
 
   Future<void> _loadCase() async {
     setState(() {
@@ -123,6 +127,55 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     }
   }
 
+  Future<void> _deleteCase() async {
+    final current = _caseModel;
+    if (current == null || _deleting) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete case?'),
+        content: Text(
+          'This will permanently delete ${current.referenceNumber}, including its images, discussion, votes, notifications, and audit history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await _caseRepository.deleteCase(widget.caseId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${current.referenceNumber} deleted')),
+      );
+      context.go('/');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mapNetworkError(error))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _deleting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
@@ -137,6 +190,17 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                 : _caseModel!.referenceNumber,
           ),
           actions: [
+            if (_deleting)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
             if (_canModifyCase && _caseModel?.status.canEdit == true)
               IconButton(
                 tooltip: 'Edit case',
@@ -154,6 +218,12 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                     _loadCase();
                   }
                 },
+              ),
+            if (_canDeleteCase && !_deleting)
+              IconButton(
+                tooltip: 'Delete case',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: _deleteCase,
               ),
           ],
           bottom: const TabBar(
