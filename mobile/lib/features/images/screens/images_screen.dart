@@ -143,37 +143,14 @@ class _ImagesScreenState extends State<ImagesScreen>
   }
 
   Future<String?> _promptCaption({String? initialCaption}) async {
-    final controller = TextEditingController(text: initialCaption ?? '');
-    final result = await showDialog<String?>(
+    return showDialog<String?>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Image caption'),
-        content: TextField(
-          controller: controller,
-          maxLength: 500,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Add optional context for this collateral image',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(''),
-            child: const Text('Skip'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (context) => _CaptionDialog(
+        title: 'Image caption',
+        initialCaption: initialCaption,
+        emptyActionLabel: 'Skip',
       ),
     );
-    controller.dispose();
-    return result;
   }
 
   Future<ImageModel?> _updateCaption(ImageModel image, String caption) async {
@@ -634,36 +611,14 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
 
   Future<void> _editCaption() async {
     final current = _images[_currentIndex];
-    final controller = TextEditingController(text: current.caption ?? '');
     final caption = await showDialog<String?>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit caption'),
-        content: TextField(
-          controller: controller,
-          maxLength: 500,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Add optional context for this collateral image',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(''),
-            child: const Text('Clear'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (context) => _CaptionDialog(
+        title: 'Edit caption',
+        initialCaption: current.caption,
+        emptyActionLabel: 'Clear',
       ),
     );
-    controller.dispose();
     if (caption == null || !mounted) return;
 
     final updated = await widget.onUpdateCaption(current, caption);
@@ -735,6 +690,73 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CaptionDialog extends StatefulWidget {
+  final String title;
+  final String? initialCaption;
+  final String emptyActionLabel;
+
+  const _CaptionDialog({
+    required this.title,
+    required this.initialCaption,
+    required this.emptyActionLabel,
+  });
+
+  @override
+  State<_CaptionDialog> createState() => _CaptionDialogState();
+}
+
+class _CaptionDialogState extends State<_CaptionDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialCaption ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _close(String? value) {
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        maxLength: 500,
+        maxLines: 3,
+        textInputAction: TextInputAction.done,
+        decoration: const InputDecoration(
+          hintText: 'Add optional context for this collateral image',
+        ),
+        onSubmitted: (_) => _close(_controller.text.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => _close(null),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => _close(''),
+          child: Text(widget.emptyActionLabel),
+        ),
+        FilledButton(
+          onPressed: () => _close(_controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

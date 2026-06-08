@@ -125,6 +125,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
@@ -155,6 +157,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               ),
           ],
           bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
@@ -168,18 +172,19 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
         ),
         body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: _CaseOverviewCard(
-                caseModel: _caseModel,
-                loading: _loading,
-                updatingStatus: _updatingStatus,
-                error: _error,
-                canModify: _canModifyCase,
-                onRetry: _loadCase,
-                onChangeStatus: _changeStatus,
+            if (!keyboardVisible)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                child: _CaseOverviewCard(
+                  caseModel: _caseModel,
+                  loading: _loading,
+                  updatingStatus: _updatingStatus,
+                  error: _error,
+                  canModify: _canModifyCase,
+                  onRetry: _loadCase,
+                  onChangeStatus: _changeStatus,
+                ),
               ),
-            ),
             Expanded(
               child: TabBarView(children: [
                 DiscussionScreen(caseId: widget.caseId),
@@ -242,8 +247,8 @@ class _CaseOverviewCard extends StatelessWidget {
     final data = caseModel;
     if (data == null) return const SizedBox.shrink();
 
-    final amount =
-        NumberFormat.currency(symbol: '\$').format(data.requestedAmount);
+    final amount = NumberFormat.currency(symbol: 'ZMW ', decimalDigits: 2)
+        .format(data.requestedAmount);
     final createdAt =
         DateFormat('dd MMM yyyy, HH:mm').format(data.createdAt.toLocal());
     final deadline = data.votingDeadline == null

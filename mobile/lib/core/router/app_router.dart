@@ -9,6 +9,7 @@ import '../../features/cases/screens/case_detail_screen.dart';
 import '../../features/cases/screens/case_list_screen.dart';
 import '../../features/cases/screens/create_case_screen.dart';
 import '../../features/notifications/screens/notification_screen.dart';
+import '../../features/users/screens/user_admin_screen.dart';
 
 GoRouter appRouter(AuthBloc authBloc) {
   return GoRouter(
@@ -41,6 +42,10 @@ GoRouter appRouter(AuthBloc authBloc) {
           GoRoute(
             path: 'notifications',
             builder: (ctx, _) => const NotificationScreen(),
+          ),
+          GoRoute(
+            path: 'admin/users',
+            builder: (ctx, _) => const UserAdminScreen(),
           ),
         ],
       ),

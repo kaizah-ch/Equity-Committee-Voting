@@ -5,6 +5,7 @@
 
 # Build output
 backend/target/
+target/
 
 # Local logs
 *.log

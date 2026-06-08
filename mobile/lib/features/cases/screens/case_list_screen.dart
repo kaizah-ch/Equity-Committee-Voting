@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../bloc/case_bloc.dart';
 import '../models/case_model.dart';
+import '../../auth/bloc/auth_bloc.dart';
 import '../../notifications/bloc/notification_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
@@ -41,12 +42,14 @@ class _CaseListViewState extends State<_CaseListView> {
   StompUnsubscribe? _unsubscribeCases;
   CaseStatus? _selectedStatus;
   String _searchQuery = '';
+  String? _currentUserRole;
   Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_loadMoreIfNeeded);
+    _loadCurrentUserRole();
     context.read<NotificationBloc>().add(LoadNotifications());
     _connectRealtime();
   }
@@ -66,6 +69,12 @@ class _CaseListViewState extends State<_CaseListView> {
     context
         .read<CaseBloc>()
         .add(LoadCases(status: _selectedStatus, showLoading: showLoading));
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    final role = await _storage.read(key: AppConstants.userRoleKey);
+    if (!mounted) return;
+    setState(() => _currentUserRole = role);
   }
 
   void _loadMoreIfNeeded() {
@@ -116,6 +125,30 @@ class _CaseListViewState extends State<_CaseListView> {
     setState(() => _searchQuery = '');
   }
 
+  Future<void> _confirmLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('You will need to sign in again to continue.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true && mounted) {
+      context.read<AuthBloc>().add(LogoutRequested());
+    }
+  }
+
   Future<void> _connectRealtime() async {
     final token = await _storage.read(key: AppConstants.accessTokenKey);
     if (!mounted || token == null || token.isEmpty) return;
@@ -143,6 +176,12 @@ class _CaseListViewState extends State<_CaseListView> {
       appBar: AppBar(
         title: const Text('Cases'),
         actions: [
+          if (_currentUserRole == 'ADMIN')
+            IconButton(
+              tooltip: 'Manage users',
+              icon: const Icon(Icons.manage_accounts_outlined),
+              onPressed: () => context.go('/admin/users'),
+            ),
           BlocBuilder<NotificationBloc, NotificationState>(
             builder: (context, state) {
               final unread =
@@ -170,6 +209,11 @@ class _CaseListViewState extends State<_CaseListView> {
                 ],
               );
             },
+          ),
+          IconButton(
+            tooltip: 'Sign out',
+            icon: const Icon(Icons.logout),
+            onPressed: _confirmLogout,
           ),
         ],
       ),
@@ -422,7 +466,7 @@ class _CaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(symbol: '\$');
+    final fmt = NumberFormat.currency(symbol: 'ZMW ', decimalDigits: 2);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -451,7 +495,7 @@ class _CaseCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
               Text(
-                  '${caseModel.productType} • ${fmt.format(caseModel.requestedAmount)}',
+                  '${caseModel.productType} - ${fmt.format(caseModel.requestedAmount)}',
                   style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 4),
               Text('By ${caseModel.createdByName}',

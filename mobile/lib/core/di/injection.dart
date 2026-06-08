@@ -12,6 +12,8 @@ import '../../features/voting/repository/vote_repository.dart';
 import '../../features/notifications/bloc/notification_bloc.dart';
 import '../../features/notifications/repository/notification_repository.dart';
 import '../../features/notifications/repository/push_notification_repository.dart';
+import '../../features/users/bloc/user_admin_bloc.dart';
+import '../../features/users/repository/user_admin_repository.dart';
 import '../network/api_client.dart';
 
 final getIt = GetIt.instance;
@@ -28,6 +30,7 @@ void configureDependencies() {
   getIt.registerSingleton(VoteRepository(dio));
   getIt.registerSingleton(NotificationRepository(dio));
   getIt.registerSingleton(PushNotificationRepository(dio));
+  getIt.registerSingleton(UserAdminRepository(dio));
 
   getIt.registerFactory(() => AuthBloc(
         getIt<AuthRepository>(),
@@ -38,4 +41,5 @@ void configureDependencies() {
   getIt.registerFactory(() => MessageBloc(getIt<MessageRepository>()));
   getIt.registerFactory(() => VotingBloc(getIt<VoteRepository>()));
   getIt.registerFactory(() => NotificationBloc(getIt<NotificationRepository>()));
+  getIt.registerFactory(() => UserAdminBloc(getIt<UserAdminRepository>()));
 }

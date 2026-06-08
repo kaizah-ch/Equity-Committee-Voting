@@ -1,14 +1,11 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:5010}
 
 spring:
-  profiles:
-    default: local
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/equity_voting
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/equity_voting}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:postgres}}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -26,9 +23,9 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:equity-committee-voting-secret-key-must-be-at-least-256-bits-long}
-    expiration-ms: 86400000       # 24 hours
-    refresh-expiration-ms: 604800000  # 7 days
+    secret: ${JWT_SECRET:change-me-to-a-long-secure-secret-at-least-256-bits}
+    expiration-ms: ${JWT_EXPIRATION:86400000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
 
   s3:
     bucket: ${S3_BUCKET:equity-committee-voting-images-dev}
