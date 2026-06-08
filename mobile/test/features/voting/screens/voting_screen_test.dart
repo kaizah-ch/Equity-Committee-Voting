@@ -36,7 +36,7 @@ class _FailingLoadVoteRepository extends VoteRepository {
 
   @override
   Future<List<VoteModel>> getVotes(String caseId) async {
-    final requestOptions = RequestOptions(path: '/api/cases/$caseId/vote');
+    final requestOptions = RequestOptions(path: '/cases/$caseId/vote');
     throw DioException(
       requestOptions: requestOptions,
       response: Response<dynamic>(

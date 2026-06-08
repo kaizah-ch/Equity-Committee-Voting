@@ -1,5 +1,5 @@
 import 'package:stomp_dart_client/stomp_dart_client.dart';
-import '../constants/app_constants.dart';
+import 'api_url_builder.dart';
 
 typedef MessageCallback = void Function(StompFrame frame);
 
@@ -12,7 +12,7 @@ class WebSocketClient {
   void connect({required VoidCallback onConnected}) {
     _client = StompClient(
       config: StompConfig.sockJS(
-        url: AppConstants.wsUrl,
+        url: ApiUrlBuilder.webSocketUrl,
         onConnect: (frame) => onConnected(),
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},

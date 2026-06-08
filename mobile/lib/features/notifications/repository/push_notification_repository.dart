@@ -27,8 +27,7 @@ class PushNotificationRepository {
         sound: true,
       );
 
-      _foregroundSubscription ??=
-          FirebaseMessaging.onMessage.listen((message) {
+      _foregroundSubscription ??= FirebaseMessaging.onMessage.listen((message) {
         onForegroundNotification();
       });
       _tapSubscription ??=
@@ -59,7 +58,7 @@ class PushNotificationRepository {
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) return;
-      await _dio.delete('/api/me/device-token', data: {
+      await _dio.delete('me/device-token', data: {
         'token': token,
         'platform': _platform,
       });
@@ -86,7 +85,7 @@ class PushNotificationRepository {
   }
 
   Future<void> _registerToken(String token) async {
-    await _dio.put('/api/me/device-token', data: {
+    await _dio.put('me/device-token', data: {
       'token': token,
       'platform': _platform,
     });

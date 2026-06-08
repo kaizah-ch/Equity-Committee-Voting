@@ -38,7 +38,7 @@ class _FakeVoteRepository extends VoteRepository {
 
 void main() {
   DioException votingError(String detail) {
-    final requestOptions = RequestOptions(path: '/api/cases/case-1/vote');
+    final requestOptions = RequestOptions(path: '/cases/case-1/vote');
     return DioException(
       requestOptions: requestOptions,
       response: Response<dynamic>(

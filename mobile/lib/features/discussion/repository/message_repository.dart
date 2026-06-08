@@ -20,14 +20,14 @@ class MessageModel {
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => MessageModel(
-    id: json['id'] as String,
-    caseId: json['caseId'] as String,
-    senderId: json['senderId'] as String,
-    senderName: json['senderName'] as String,
-    messageText: json['messageText'] as String,
-    parentMessageId: json['parentMessageId'] as String?,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-  );
+        id: json['id'] as String,
+        caseId: json['caseId'] as String,
+        senderId: json['senderId'] as String,
+        senderName: json['senderName'] as String,
+        messageText: json['messageText'] as String,
+        parentMessageId: json['parentMessageId'] as String?,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
 }
 
 class MessageRepository {
@@ -35,15 +35,16 @@ class MessageRepository {
   MessageRepository(this._dio);
 
   Future<List<MessageModel>> getMessages(String caseId, {int page = 0}) async {
-    final response = await _dio.get('/api/cases/$caseId/messages',
+    final response = await _dio.get('cases/$caseId/messages',
         queryParameters: {'page': page, 'size': 50});
     return (response.data['content'] as List)
         .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
-  Future<MessageModel> sendMessage(String caseId, String text, {String? parentId}) async {
-    final response = await _dio.post('/api/cases/$caseId/messages', data: {
+  Future<MessageModel> sendMessage(String caseId, String text,
+      {String? parentId}) async {
+    final response = await _dio.post('cases/$caseId/messages', data: {
       'messageText': text,
       if (parentId != null) 'parentMessageId': parentId,
     });

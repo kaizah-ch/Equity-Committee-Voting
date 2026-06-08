@@ -50,7 +50,7 @@ void main() {
       );
 
   DioException discussionError(String detail) {
-    final requestOptions = RequestOptions(path: '/api/cases/case-1/messages');
+    final requestOptions = RequestOptions(path: '/cases/case-1/messages');
     return DioException(
       requestOptions: requestOptions,
       response: Response<dynamic>(

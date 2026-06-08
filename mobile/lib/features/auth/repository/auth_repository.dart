@@ -12,7 +12,7 @@ class AuthRepository {
   AuthRepository(this._dio, this._storage);
 
   Future<TokenPair> login(LoginCredentials credentials) async {
-    final response = await _dio.post('/api/auth/login', data: {
+    final response = await _dio.post('auth/login', data: {
       'email': credentials.email,
       'password': credentials.password,
     });

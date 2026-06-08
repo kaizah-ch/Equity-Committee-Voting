@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
+import 'api_url_builder.dart';
 import 'network_error_mapper.dart';
 
 Dio createDioClient(FlutterSecureStorage storage) {
   final dio = Dio(BaseOptions(
-    baseUrl: AppConstants.baseUrl,
+    baseUrl: ApiUrlBuilder.dioBaseUrl,
     connectTimeout: const Duration(seconds: 15),
     receiveTimeout: const Duration(seconds: 30),
     headers: {'Content-Type': 'application/json'},
@@ -13,6 +14,9 @@ Dio createDioClient(FlutterSecureStorage storage) {
 
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
+      if (!Uri.parse(options.path).hasScheme) {
+        options.path = ApiUrlBuilder.endpoint(options.path);
+      }
       final token = await storage.read(key: AppConstants.accessTokenKey);
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
@@ -22,8 +26,8 @@ Dio createDioClient(FlutterSecureStorage storage) {
     onError: (error, handler) async {
       final statusCode = error.response?.statusCode;
       final req = error.requestOptions;
-      final isAuthEndpoint = req.path.contains('/api/auth/login') ||
-          req.path.contains('/api/auth/refresh');
+      final isAuthEndpoint = req.path.contains('/auth/login') ||
+          req.path.contains('/auth/refresh');
       final alreadyRetried = req.extra['retried'] == true;
       final networkRetried = req.extra['networkRetried'] == true;
 
@@ -53,14 +57,14 @@ Dio createDioClient(FlutterSecureStorage storage) {
 
         try {
           final refreshClient = Dio(BaseOptions(
-            baseUrl: AppConstants.baseUrl,
+            baseUrl: ApiUrlBuilder.dioBaseUrl,
             connectTimeout: const Duration(seconds: 15),
             receiveTimeout: const Duration(seconds: 30),
             headers: {'Content-Type': 'application/json'},
           ));
 
-          final refreshResp =
-              await refreshClient.post('/api/auth/refresh', data: {
+          final refreshResp = await refreshClient
+              .post(ApiUrlBuilder.endpoint('auth/refresh'), data: {
             'refreshToken': refreshToken,
           });
           final accessToken = refreshResp.data['accessToken'] as String;

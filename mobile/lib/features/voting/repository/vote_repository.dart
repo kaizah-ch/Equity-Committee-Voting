@@ -54,7 +54,7 @@ class VoteRepository {
   VoteRepository(this._dio);
 
   Future<List<VoteModel>> getVotes(String caseId) async {
-    final response = await _dio.get('/api/cases/$caseId/vote');
+    final response = await _dio.get('cases/$caseId/vote');
     return (response.data as List)
         .map((e) => VoteModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -62,7 +62,7 @@ class VoteRepository {
 
   Future<VoteModel> castVote(String caseId, VoteChoice choice,
       {String? reason}) async {
-    final response = await _dio.post('/api/cases/$caseId/vote', data: {
+    final response = await _dio.post('cases/$caseId/vote', data: {
       'voteChoice': choice.apiName,
       if (reason != null) 'reason': reason,
     });

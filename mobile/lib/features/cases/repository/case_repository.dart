@@ -21,7 +21,7 @@ class CaseRepository {
     if (status != null) {
       params['status'] = status.apiName;
     }
-    final response = await _dio.get('/api/cases', queryParameters: params);
+    final response = await _dio.get('cases', queryParameters: params);
     final data = response.data as Map<String, dynamic>;
     final content = (data['content'] as List);
     final cases = content
@@ -32,23 +32,23 @@ class CaseRepository {
   }
 
   Future<CaseModel> getCase(String id) async {
-    final response = await _dio.get('/api/cases/$id');
+    final response = await _dio.get('cases/$id');
     return CaseModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<CaseModel> createCase(Map<String, dynamic> data) async {
-    final response = await _dio.post('/api/cases', data: data);
+    final response = await _dio.post('cases', data: data);
     return CaseModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<CaseModel> updateCase(String id, Map<String, dynamic> data) async {
-    final response = await _dio.put('/api/cases/$id', data: data);
+    final response = await _dio.put('cases/$id', data: data);
     return CaseModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<CaseModel> updateStatus(String id, String status) async {
     final response =
-        await _dio.patch('/api/cases/$id/status', data: {'status': status});
+        await _dio.patch('cases/$id/status', data: {'status': status});
     return CaseModel.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -58,7 +58,7 @@ class CaseRepository {
     int size = 20,
   }) async {
     final response = await _dio.get(
-      '/api/cases/$caseId/audit-logs',
+      'cases/$caseId/audit-logs',
       queryParameters: {'page': page, 'size': size},
     );
     final data = response.data as Map<String, dynamic>;

@@ -27,7 +27,7 @@ class _FailingSendMessageRepository extends MessageRepository {
 
   @override
   Future<MessageModel> sendMessage(String caseId, String text, {String? parentId}) async {
-    final requestOptions = RequestOptions(path: '/api/cases/$caseId/messages');
+    final requestOptions = RequestOptions(path: '/cases/$caseId/messages');
     throw DioException(
       requestOptions: requestOptions,
       response: Response<dynamic>(

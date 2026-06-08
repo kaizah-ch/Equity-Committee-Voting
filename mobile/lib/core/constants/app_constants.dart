@@ -1,11 +1,11 @@
 class AppConstants {
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080',
+    defaultValue: 'https://api-voting.frontierfin.net/api',
   );
   static const String wsUrl = String.fromEnvironment(
     'WS_URL',
-    defaultValue: 'http://10.0.2.2:8080/ws',
+    defaultValue: 'wss://api-voting.frontierfin.net/ws',
   );
 
   static const int maxImagesPerCase = 40;

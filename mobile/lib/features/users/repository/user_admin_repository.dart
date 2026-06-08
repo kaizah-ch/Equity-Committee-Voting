@@ -64,7 +64,7 @@ class UserAdminRepository {
 
   Future<List<ManagedUser>> getUsers({int page = 0}) async {
     final response = await _dio.get(
-      '/api/admin/users',
+      'admin/users',
       queryParameters: {'page': page, 'size': 100},
     );
     return (response.data['content'] as List)
@@ -78,7 +78,7 @@ class UserAdminRepository {
     required UserRole role,
     required String password,
   }) async {
-    final response = await _dio.post('/api/admin/users', data: {
+    final response = await _dio.post('admin/users', data: {
       'email': email,
       'fullName': fullName,
       'role': role.apiName,
@@ -94,7 +94,7 @@ class UserAdminRepository {
     required UserRole role,
     required bool active,
   }) async {
-    final response = await _dio.put('/api/admin/users/$id', data: {
+    final response = await _dio.put('admin/users/$id', data: {
       'email': email,
       'fullName': fullName,
       'role': role.apiName,
@@ -104,12 +104,12 @@ class UserAdminRepository {
   }
 
   Future<ManagedUser> deactivateUser(String id) async {
-    final response = await _dio.delete('/api/admin/users/$id');
+    final response = await _dio.delete('admin/users/$id');
     return ManagedUser.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<ManagedUser> reactivateUser(String id) async {
-    final response = await _dio.patch('/api/admin/users/$id/reactivate');
+    final response = await _dio.patch('admin/users/$id/reactivate');
     return ManagedUser.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -118,7 +118,7 @@ class UserAdminRepository {
     required String password,
   }) async {
     final response = await _dio.post(
-      '/api/admin/users/$id/reset-password',
+      'admin/users/$id/reset-password',
       data: {'password': password},
     );
     return ManagedUser.fromJson(response.data as Map<String, dynamic>);

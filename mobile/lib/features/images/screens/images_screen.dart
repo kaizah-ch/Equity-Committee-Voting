@@ -158,7 +158,7 @@ class _ImagesScreenState extends State<ImagesScreen>
     try {
       final dio = getIt<Dio>();
       final resp = await dio.patch(
-        '/api/images/${image.id}/caption',
+        'images/${image.id}/caption',
         data: {'caption': caption},
       );
       final updated = ImageModel.fromJson(resp.data as Map<String, dynamic>);
@@ -204,7 +204,7 @@ class _ImagesScreenState extends State<ImagesScreen>
     setState(() => _deletingImageIds.add(image.id));
     try {
       final dio = getIt<Dio>();
-      await dio.delete('/api/images/${image.id}');
+      await dio.delete('images/${image.id}');
       if (!mounted) return;
       setState(() => _images.removeWhere((i) => i.id == image.id));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -228,7 +228,7 @@ class _ImagesScreenState extends State<ImagesScreen>
     }
     try {
       final dio = getIt<Dio>();
-      final resp = await dio.get('/api/cases/${widget.caseId}/images');
+      final resp = await dio.get('cases/${widget.caseId}/images');
       if (!mounted) return;
       setState(() => _images = (resp.data as List)
           .map((e) => ImageModel.fromJson(e as Map<String, dynamic>))
@@ -330,7 +330,7 @@ class _ImagesScreenState extends State<ImagesScreen>
       }
       final formData = FormData.fromMap(payload);
       await dio.post(
-        '/api/cases/${widget.caseId}/images',
+        'cases/${widget.caseId}/images',
         data: formData,
         onSendProgress: (sent, total) {
           if (!mounted || total <= 0) return;

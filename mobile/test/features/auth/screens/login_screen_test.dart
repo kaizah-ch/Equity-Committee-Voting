@@ -19,7 +19,7 @@ class _FailingAuthRepository extends AuthRepository {
 
   @override
   Future<TokenPair> login(LoginCredentials credentials) async {
-    final requestOptions = RequestOptions(path: '/api/auth/login');
+    final requestOptions = RequestOptions(path: '/auth/login');
     throw DioException(
       requestOptions: requestOptions,
       response: Response<dynamic>(

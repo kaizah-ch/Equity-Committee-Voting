@@ -22,7 +22,7 @@ void main() {
 
   test('maps known auth detail to clearer copy', () {
     final error = dioError(
-      path: '/api/auth/login',
+      path: '/auth/login',
       statusCode: 401,
       data: {'detail': 'Invalid credentials'},
     );
@@ -32,7 +32,7 @@ void main() {
 
   test('maps parent-message mismatch detail to discussion-specific copy', () {
     final error = dioError(
-      path: '/api/cases/abc/messages',
+      path: '/cases/abc/messages',
       statusCode: 400,
       data: {'detail': 'Parent message does not belong to this case'},
     );
@@ -46,7 +46,7 @@ void main() {
   test('returns backend detail when no specific mapping exists', () {
     const detail = 'Some backend-specific validation message';
     final error = dioError(
-      path: '/api/cases',
+      path: '/cases',
       statusCode: 400,
       data: {'detail': detail},
     );
