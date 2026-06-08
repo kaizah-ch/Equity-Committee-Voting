@@ -7,5 +7,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
     ports:
       - "5010:5010"
