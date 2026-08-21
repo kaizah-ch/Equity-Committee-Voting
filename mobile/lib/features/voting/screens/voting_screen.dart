@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../bloc/voting_bloc.dart';
 import '../repository/vote_repository.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/network/session_manager.dart';
 import '../../../core/network/websocket_client.dart';
 
 class VotingScreen extends StatelessWidget {
@@ -34,6 +35,7 @@ class _VotingView extends StatefulWidget {
 class _VotingViewState extends State<_VotingView> {
   final CaseRepository _caseRepository = getIt<CaseRepository>();
   final FlutterSecureStorage _storage = getIt<FlutterSecureStorage>();
+  final SessionManager _sessionManager = getIt<SessionManager>();
   CaseModel? _caseModel;
   bool _loadingCase = true;
   bool _wsInitialized = false;
@@ -99,11 +101,10 @@ class _VotingViewState extends State<_VotingView> {
       _currentUserRole == 'CHAIRPERSON';
 
   Future<void> _connectRealtime() async {
-    final token = await _storage.read(key: AppConstants.accessTokenKey);
-    if (!mounted || token == null || token.isEmpty) return;
+    if (!mounted) return;
 
-    final ws = WebSocketClient(token);
-    ws.connect(onConnected: () {
+    final ws = WebSocketClient(_sessionManager);
+    await ws.connect(onConnected: () {
       _unsubscribeVotes =
           ws.subscribe('/topic/cases/${widget.caseId}/votes', (_) {
         _votingBloc.add(LoadVotes(widget.caseId));

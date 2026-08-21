@@ -4,6 +4,7 @@ com\equitycommittee\voting\service\ImageServiceTest.class
 com\equitycommittee\voting\service\PushNotificationServiceTest$1.class
 com\equitycommittee\voting\config\WebSocketAuthChannelInterceptorTest.class
 com\equitycommittee\voting\api\controller\VoteControllerHttpTest.class
+com\equitycommittee\voting\service\PermissionMatrixRegressionTest.class
 com\equitycommittee\voting\service\DeviceTokenServiceTest.class
 com\equitycommittee\voting\api\controller\MessageControllerHttpTest.class
 com\equitycommittee\voting\config\S3SmokeIT.class

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../../../core/network/network_error_mapper.dart';
+import '../../../core/network/session_manager.dart';
 import '../models/auth_models.dart';
 import '../repository/auth_repository.dart';
 import '../../notifications/repository/push_notification_repository.dart';
@@ -14,6 +18,7 @@ class LoginRequested extends AuthEvent {
   LoginRequested(this.credentials);
 }
 class LogoutRequested extends AuthEvent {}
+class SessionExpired extends AuthEvent {}
 
 // States
 abstract class AuthState {}
@@ -35,11 +40,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
   final FlutterSecureStorage _storage;
   final PushNotificationRepository _pushRepository;
+  final SessionManager _sessionManager;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
 
-  AuthBloc(this._repository, this._storage, this._pushRepository) : super(AuthInitial()) {
+  AuthBloc(
+    this._repository,
+    this._storage,
+    this._pushRepository,
+    this._sessionManager,
+  ) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<SessionExpired>(_onSessionExpired);
+    _sessionExpiredSubscription =
+        _sessionManager.sessionExpired.listen((_) => add(SessionExpired()));
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -73,8 +88,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthUnauthenticated());
   }
 
+  Future<void> _onSessionExpired(
+      SessionExpired event, Emitter<AuthState> emit) async {
+    await _pushRepository.dispose();
+    emit(AuthUnauthenticated());
+  }
+
   @override
   Future<void> close() async {
+    await _sessionExpiredSubscription.cancel();
     await _pushRepository.dispose();
     return super.close();
   }

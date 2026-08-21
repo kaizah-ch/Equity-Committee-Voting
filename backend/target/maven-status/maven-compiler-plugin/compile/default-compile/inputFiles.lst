@@ -5,6 +5,8 @@ C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\vo
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\controller\ImageController.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\controller\MessageController.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\controller\NotificationController.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\controller\PlatformController.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\controller\UserAdminController.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\controller\VoteController.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\audit\AuditLogResponse.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\auth\LoginRequest.java
@@ -20,6 +22,10 @@ C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\vo
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\messages\SendMessageRequest.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\notifications\DeviceTokenRequest.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\notifications\NotificationResponse.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\users\CreateUserRequest.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\users\ResetPasswordRequest.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\users\UpdateUserRequest.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\users\UserResponse.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\voting\VoteRequest.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\dto\voting\VoteResponse.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\api\exception\GlobalExceptionHandler.java
@@ -53,6 +59,7 @@ C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\vo
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\security\AppUserDetailsService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\security\JwtAuthFilter.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\security\JwtTokenProvider.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\security\RolePermissions.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\AuditService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\AuthService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\CaseService.java
@@ -61,6 +68,7 @@ C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\vo
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\MessageService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\NotificationService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\PushNotificationService.java
+C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\UserAdminService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\VotingReminderScheduler.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\service\VotingService.java
 C:\projects\equity-committee-voting\backend\src\main\java\com\equitycommittee\voting\VotingApplication.java

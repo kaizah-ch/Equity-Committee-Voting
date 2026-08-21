@@ -2,13 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import '../../../core/constants/app_constants.dart';
 import '../bloc/message_bloc.dart';
 import '../repository/message_repository.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/network/session_manager.dart';
 import '../../../core/network/websocket_client.dart';
 
 class DiscussionScreen extends StatefulWidget {
@@ -23,7 +22,7 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   final _msgCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final MessageBloc _messageBloc = getIt<MessageBloc>();
-  final FlutterSecureStorage _storage = getIt<FlutterSecureStorage>();
+  final SessionManager _sessionManager = getIt<SessionManager>();
   WebSocketClient? _wsClient;
   StompUnsubscribe? _unsubscribeMessages;
 
@@ -62,11 +61,8 @@ class _DiscussionScreenState extends State<DiscussionScreen> {
   }
 
   Future<void> _connectRealtime() async {
-    final token = await _storage.read(key: AppConstants.accessTokenKey);
-    if (token == null || token.isEmpty) return;
-
-    final ws = WebSocketClient(token);
-    ws.connect(onConnected: () {
+    final ws = WebSocketClient(_sessionManager);
+    await ws.connect(onConnected: () {
       _unsubscribeMessages =
           ws.subscribe('/topic/cases/${widget.caseId}/messages', (frame) {
         final body = frame.body;

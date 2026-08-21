@@ -1,15 +1,21 @@
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'api_url_builder.dart';
+import 'session_manager.dart';
 
 typedef MessageCallback = void Function(StompFrame frame);
 
 class WebSocketClient {
   StompClient? _client;
-  final String token;
+  final SessionManager _sessionManager;
 
-  WebSocketClient(this.token);
+  WebSocketClient(this._sessionManager);
 
-  void connect({required VoidCallback onConnected}) {
+  Future<void> connect({required VoidCallback onConnected}) async {
+    final token = await _sessionManager.getValidAccessToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
     _client = StompClient(
       config: StompConfig.sockJS(
         url: ApiUrlBuilder.webSocketUrl,

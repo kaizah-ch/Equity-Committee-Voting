@@ -12,6 +12,7 @@ import '../../auth/bloc/auth_bloc.dart';
 import '../../notifications/bloc/notification_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/network/session_manager.dart';
 import '../../../core/network/websocket_client.dart';
 
 class CaseListScreen extends StatelessWidget {
@@ -35,6 +36,7 @@ class _CaseListView extends StatefulWidget {
 
 class _CaseListViewState extends State<_CaseListView> {
   final FlutterSecureStorage _storage = getIt<FlutterSecureStorage>();
+  final SessionManager _sessionManager = getIt<SessionManager>();
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   WebSocketClient? _wsClient;
@@ -150,11 +152,10 @@ class _CaseListViewState extends State<_CaseListView> {
   }
 
   Future<void> _connectRealtime() async {
-    final token = await _storage.read(key: AppConstants.accessTokenKey);
-    if (!mounted || token == null || token.isEmpty) return;
+    if (!mounted) return;
 
-    final ws = WebSocketClient(token);
-    ws.connect(onConnected: () {
+    final ws = WebSocketClient(_sessionManager);
+    await ws.connect(onConnected: () {
       _unsubscribeNotifications =
           ws.subscribe('/user/queue/notifications', (_) {
         if (!mounted) return;

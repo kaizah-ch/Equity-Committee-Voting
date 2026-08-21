@@ -75,3 +75,4 @@ com\equitycommittee\voting\domain\entity\CaseEntry$Builder.class
 com\equitycommittee\voting\domain\repository\NotificationRepository.class
 com\equitycommittee\voting\security\JwtAuthFilter.class
 com\equitycommittee\voting\api\dto\cases\CaseResponse.class
+com\equitycommittee\voting\security\RolePermissions.class

@@ -11,6 +11,8 @@ C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\vo
 C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\ImageServiceTest.java
 C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\MessageServiceAuthTest.java
 C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\NotificationServiceTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\PermissionMatrixRegressionTest.java
 C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\PushNotificationServiceTest.java
+C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\UserAdminServiceTest.java
 C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\VotingReminderSchedulerTest.java
 C:\projects\equity-committee-voting\backend\src\test\java\com\equitycommittee\voting\service\VotingServiceAuthTest.java

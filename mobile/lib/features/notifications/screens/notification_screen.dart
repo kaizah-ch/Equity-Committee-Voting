@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/network/session_manager.dart';
 import '../../../core/network/websocket_client.dart';
 import '../bloc/notification_bloc.dart';
 import '../repository/notification_repository.dart';
@@ -20,7 +19,7 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  final FlutterSecureStorage _storage = getIt<FlutterSecureStorage>();
+  final SessionManager _sessionManager = getIt<SessionManager>();
   WebSocketClient? _wsClient;
   StompUnsubscribe? _unsubscribe;
   bool _wsInitialized = false;
@@ -47,11 +46,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _connectRealtime() async {
-    final token = await _storage.read(key: AppConstants.accessTokenKey);
-    if (!mounted || token == null || token.isEmpty) return;
+    if (!mounted) return;
 
-    final ws = WebSocketClient(token);
-    ws.connect(onConnected: () {
+    final ws = WebSocketClient(_sessionManager);
+    await ws.connect(onConnected: () {
       _unsubscribe = ws.subscribe('/user/queue/notifications', (_) {
         if (!mounted) return;
         context.read<NotificationBloc>().add(LoadNotifications(showLoading: false));

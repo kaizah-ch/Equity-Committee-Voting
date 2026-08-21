@@ -16,6 +16,7 @@ import '../../features/notifications/repository/push_notification_repository.dar
 import '../../features/users/bloc/user_admin_bloc.dart';
 import '../../features/users/repository/user_admin_repository.dart';
 import '../network/api_client.dart';
+import '../network/session_manager.dart';
 
 final getIt = GetIt.instance;
 
@@ -23,10 +24,13 @@ void configureDependencies() {
   const storage = FlutterSecureStorage();
   getIt.registerSingleton<FlutterSecureStorage>(storage);
 
-  final dio = createDioClient(storage);
+  final sessionManager = SessionManager(storage);
+  getIt.registerSingleton<SessionManager>(sessionManager);
+
+  final dio = createDioClient(sessionManager);
   getIt.registerSingleton<Dio>(dio);
 
-  getIt.registerSingleton(AuthRepository(dio, storage));
+  getIt.registerSingleton(AuthRepository(dio, sessionManager));
   getIt.registerSingleton(CaseRepository(dio));
   getIt.registerSingleton(MessageRepository(dio));
   getIt.registerSingleton(VoteRepository(dio));
@@ -38,6 +42,7 @@ void configureDependencies() {
         getIt<AuthRepository>(),
         storage,
         getIt<PushNotificationRepository>(),
+        getIt<SessionManager>(),
       ));
   getIt.registerFactory(() => CaseBloc(getIt<CaseRepository>()));
   getIt.registerFactory(() => MessageBloc(getIt<MessageRepository>()));
