@@ -1,5 +1,7 @@
 package com.equitycommittee.voting.config;
 
+import com.equitycommittee.voting.domain.entity.CaseEntry;
+import com.equitycommittee.voting.domain.enums.CaseStatus;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
 import com.equitycommittee.voting.security.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
@@ -28,6 +30,8 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
     private static final String CASE_TOPIC_PREFIX = "/topic/cases/";
     private static final Set<String> CASE_TOPIC_ALLOWED_ROLES = Set.of(
             "ROLE_ADMIN",
+            "ROLE_CREDIT_OFFICER",
+            "ROLE_MANAGER",
             "ROLE_COMMITTEE_MEMBER",
             "ROLE_CHAIRPERSON",
             "ROLE_SECRETARY"
@@ -107,9 +111,9 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
             if (!CASE_TOPIC_ALLOWED_SUFFIXES.contains(suffix)) {
                 throw new AccessDeniedException("Case topic destination not allowed");
             }
-            if (!caseRepository.existsById(caseId)) {
-                throw new AccessDeniedException("Case does not exist");
-            }
+            CaseEntry caseEntry = caseRepository.findById(caseId)
+                    .orElseThrow(() -> new AccessDeniedException("Case does not exist"));
+            requireCaseVisibility(authentication, caseEntry);
         }
     }
 
@@ -139,6 +143,45 @@ public class WebSocketAuthChannelInterceptor implements ChannelInterceptor {
                 .anyMatch(CASE_TOPIC_ALLOWED_ROLES::contains);
         if (!hasAllowedRole) {
             throw new AccessDeniedException("Insufficient role for case topic");
+        }
+    }
+
+    private void requireCaseVisibility(Authentication authentication, CaseEntry caseEntry) {
+        String role = authentication.getAuthorities().stream()
+                .map(Object::toString)
+                .filter(CASE_TOPIC_ALLOWED_ROLES::contains)
+                .findFirst()
+                .orElseThrow(() -> new AccessDeniedException("Insufficient role for case topic"));
+
+        UUID userId = parseUserId(authentication.getName());
+        boolean isCreator = caseEntry.getCreatedBy() != null
+                && caseEntry.getCreatedBy().getId() != null
+                && caseEntry.getCreatedBy().getId().equals(userId);
+        if (isCreator || "ROLE_ADMIN".equals(role)) {
+            return;
+        }
+
+        if ("ROLE_MANAGER".equals(role) && caseEntry.getStatus() != CaseStatus.DRAFT) {
+            return;
+        }
+
+        boolean managerApproved = caseEntry.getStatus() != CaseStatus.DRAFT
+                && caseEntry.getStatus() != CaseStatus.SUBMITTED;
+        boolean committeeViewer = "ROLE_COMMITTEE_MEMBER".equals(role)
+                || "ROLE_SECRETARY".equals(role)
+                || "ROLE_CHAIRPERSON".equals(role);
+        if (committeeViewer && managerApproved) {
+            return;
+        }
+
+        throw new AccessDeniedException("Case topic not visible for role");
+    }
+
+    private UUID parseUserId(String userId) {
+        try {
+            return UUID.fromString(userId);
+        } catch (IllegalArgumentException ex) {
+            throw new AccessDeniedException("Invalid user id");
         }
     }
 }

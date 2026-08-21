@@ -14,6 +14,7 @@ import com.equitycommittee.voting.domain.repository.CaseImageRepository;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
 import com.equitycommittee.voting.domain.repository.NotificationRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
+import com.equitycommittee.voting.security.RolePermissions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -50,6 +51,8 @@ public class CaseService {
     private final SimpMessagingTemplate messagingTemplate;
     private final S3Client s3Client;
     private static final Map<CaseStatus, Set<CaseStatus>> ALLOWED_TRANSITIONS = allowedTransitions();
+    private static final Set<CaseStatus> COMMITTEE_HIDDEN_STATUSES =
+            EnumSet.of(CaseStatus.DRAFT, CaseStatus.SUBMITTED);
 
     @Value("${app.s3.bucket}")
     private String bucket;
@@ -85,14 +88,14 @@ public class CaseService {
     @Transactional(readOnly = true)
     public Page<CaseResponse> listCases(CaseStatus status, Pageable pageable) {
         User actor = currentUser();
-        if (isPrivilegedRole(actor)) {
+        if (RolePermissions.isAdmin(actor)) {
             if (status != null) {
                 return caseRepository.findByStatus(status, pageable).map(CaseResponse::from);
             }
             return caseRepository.findAll(pageable).map(CaseResponse::from);
         }
 
-        if (isCommitteeRole(actor)) {
+        if (RolePermissions.isManager(actor)) {
             if (status == CaseStatus.DRAFT) {
                 return caseRepository.findByStatusAndCreatedById(CaseStatus.DRAFT, actor.getId(), pageable)
                         .map(CaseResponse::from);
@@ -101,6 +104,22 @@ public class CaseService {
                 return caseRepository.findByStatus(status, pageable).map(CaseResponse::from);
             }
             return caseRepository.findByStatusNotOrCreatedById(CaseStatus.DRAFT, actor.getId(), pageable)
+                    .map(CaseResponse::from);
+        }
+
+        if (RolePermissions.isCommitteeViewerRole(actor)) {
+            if (status != null && COMMITTEE_HIDDEN_STATUSES.contains(status)) {
+                return caseRepository.findByStatusAndCreatedById(status, actor.getId(), pageable)
+                        .map(CaseResponse::from);
+            }
+            if (status != null) {
+                return caseRepository.findByStatus(status, pageable).map(CaseResponse::from);
+            }
+            return caseRepository.findVisibleExcludingStatusesOrCreatedById(
+                            COMMITTEE_HIDDEN_STATUSES,
+                            actor.getId(),
+                            pageable
+                    )
                     .map(CaseResponse::from);
         }
 
@@ -122,7 +141,7 @@ public class CaseService {
     public CaseResponse updateCase(UUID id, UpdateCaseRequest req) {
         User actor = currentUser();
         CaseEntry caseEntry = findCaseOrThrow(id);
-        assertCanModifyCase(actor, caseEntry);
+        assertCanEditCase(actor, caseEntry);
 
         if (!isEditable(caseEntry.getStatus())) {
             throw new ResponseStatusException(
@@ -150,10 +169,10 @@ public class CaseService {
     public CaseResponse updateStatus(UUID id, UpdateCaseStatusRequest req) {
         User actor = currentUser();
         CaseEntry caseEntry = findCaseOrThrow(id);
-        assertCanModifyCase(actor, caseEntry);
         CaseStatus previous = caseEntry.getStatus();
 
         validateStatusTransition(caseEntry, req.status());
+        assertCanChangeStatus(actor, caseEntry, req.status());
 
         caseEntry.setStatus(req.status());
         if (isFinalStatus(req.status())) {
@@ -265,41 +284,76 @@ public class CaseService {
     }
 
     private void assertCanViewCase(User actor, CaseEntry caseEntry) {
-        if (isPrivilegedRole(actor) || isCaseCreator(actor, caseEntry)) {
+        if (RolePermissions.isAdmin(actor) || RolePermissions.isCaseCreator(actor, caseEntry)) {
             return;
         }
 
-        if (caseEntry.getStatus() == CaseStatus.DRAFT) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access draft case");
+        if (RolePermissions.isManager(actor) && caseEntry.getStatus() != CaseStatus.DRAFT) {
+            return;
         }
 
-        if (!isCommitteeRole(actor)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access case");
+        if (RolePermissions.isCommitteeViewerRole(actor) && RolePermissions.isManagerApproved(caseEntry)) {
+            return;
         }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access case");
     }
 
-    private void assertCanModifyCase(User actor, CaseEntry caseEntry) {
-        if (isPrivilegedRole(actor) || isCaseCreator(actor, caseEntry)) {
+    private void assertCanEditCase(User actor, CaseEntry caseEntry) {
+        if (RolePermissions.isManagerApprovalRole(actor)) {
             return;
         }
+
+        if (caseEntry.getStatus() == CaseStatus.UNDER_REVIEW && actor.getRole() == Role.CHAIRPERSON) {
+            return;
+        }
+
+        if (RolePermissions.isCaseCreator(actor, caseEntry)
+                && (caseEntry.getStatus() == CaseStatus.DRAFT || caseEntry.getStatus() == CaseStatus.SUBMITTED)) {
+            return;
+        }
+
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to modify this case");
     }
 
-    private boolean isPrivilegedRole(User actor) {
-        return actor.getRole() == Role.ADMIN || actor.getRole() == Role.CHAIRPERSON;
-    }
+    private void assertCanChangeStatus(User actor, CaseEntry caseEntry, CaseStatus requestedStatus) {
+        CaseStatus current = caseEntry.getStatus();
+        if (requestedStatus == current) {
+            return;
+        }
 
-    private boolean isCommitteeRole(User actor) {
-        return actor.getRole() == Role.COMMITTEE_MEMBER || actor.getRole() == Role.SECRETARY;
-    }
+        if (current == CaseStatus.DRAFT && requestedStatus == CaseStatus.SUBMITTED) {
+            if (RolePermissions.isCaseCreator(actor, caseEntry) || RolePermissions.isManagerApprovalRole(actor)) {
+                return;
+            }
+        }
 
-    private boolean isCaseCreator(User actor, CaseEntry caseEntry) {
-        return caseEntry.getCreatedBy() != null
-                && caseEntry.getCreatedBy().getId() != null
-                && caseEntry.getCreatedBy().getId().equals(actor.getId());
+        if (current == CaseStatus.SUBMITTED && requestedStatus == CaseStatus.DRAFT) {
+            if (RolePermissions.isCaseCreator(actor, caseEntry) || RolePermissions.isManagerApprovalRole(actor)) {
+                return;
+            }
+        }
+
+        if (current == CaseStatus.SUBMITTED && requestedStatus == CaseStatus.UNDER_REVIEW) {
+            if (RolePermissions.isManagerApprovalRole(actor)) {
+                return;
+            }
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only managers can approve submitted cases");
+        }
+
+        if (current == CaseStatus.UNDER_REVIEW || current == CaseStatus.VOTING_OPEN || isFinalStatus(current)) {
+            if (RolePermissions.isDecisionRole(actor)) {
+                return;
+            }
+        }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to change this case status");
     }
 
     private void publishCaseListUpdate(CaseResponse response) {
+        if (response.status() == CaseStatus.DRAFT || response.status() == CaseStatus.SUBMITTED) {
+            return;
+        }
         messagingTemplate.convertAndSend("/topic/cases", response);
     }
 

@@ -1,5 +1,9 @@
 package com.equitycommittee.voting.config;
 
+import com.equitycommittee.voting.domain.entity.CaseEntry;
+import com.equitycommittee.voting.domain.entity.User;
+import com.equitycommittee.voting.domain.enums.CaseStatus;
+import com.equitycommittee.voting.domain.enums.Role;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
 import com.equitycommittee.voting.security.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
@@ -18,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.UUID;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -69,8 +74,39 @@ class WebSocketAuthChannelInterceptorTest {
     @Test
     void subscribe_caseTopic_withAllowedRoleAndExistingCase_isAllowed() {
         UUID caseId = UUID.randomUUID();
-        Authentication principal = authPrincipal("user-1", "ROLE_COMMITTEE_MEMBER");
-        when(caseRepository.existsById(caseId)).thenReturn(true);
+        UUID actorId = UUID.randomUUID();
+        Authentication principal = authPrincipal(actorId.toString(), "ROLE_COMMITTEE_MEMBER");
+        when(caseRepository.findById(caseId)).thenReturn(Optional.of(
+                caseEntry(caseId, CaseStatus.UNDER_REVIEW, user(UUID.randomUUID(), Role.CREDIT_OFFICER))));
+
+        Message<?> message = subscribeMessage("/topic/cases/" + caseId + "/messages", principal);
+
+        Message<?> result = interceptor.preSend(message, mock(MessageChannel.class));
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void subscribe_caseTopic_committeeMemberSubmittedCase_isDenied() {
+        UUID caseId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        Authentication principal = authPrincipal(actorId.toString(), "ROLE_COMMITTEE_MEMBER");
+        when(caseRepository.findById(caseId)).thenReturn(Optional.of(
+                caseEntry(caseId, CaseStatus.SUBMITTED, user(UUID.randomUUID(), Role.CREDIT_OFFICER))));
+
+        Message<?> message = subscribeMessage("/topic/cases/" + caseId + "/messages", principal);
+
+        assertThrows(AccessDeniedException.class,
+                () -> interceptor.preSend(message, mock(MessageChannel.class)));
+    }
+
+    @Test
+    void subscribe_caseTopic_managerSubmittedCase_isAllowed() {
+        UUID caseId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        Authentication principal = authPrincipal(actorId.toString(), "ROLE_MANAGER");
+        when(caseRepository.findById(caseId)).thenReturn(Optional.of(
+                caseEntry(caseId, CaseStatus.SUBMITTED, user(UUID.randomUUID(), Role.CREDIT_OFFICER))));
 
         Message<?> message = subscribeMessage("/topic/cases/" + caseId + "/messages", principal);
 
@@ -121,7 +157,7 @@ class WebSocketAuthChannelInterceptorTest {
     void subscribe_caseTopic_withMissingCase_isDenied() {
         UUID caseId = UUID.randomUUID();
         Authentication principal = authPrincipal("user-1", "ROLE_SECRETARY");
-        when(caseRepository.existsById(caseId)).thenReturn(false);
+        when(caseRepository.findById(caseId)).thenReturn(Optional.empty());
         Message<?> message = subscribeMessage("/topic/cases/" + caseId + "/verdict", principal);
 
         assertThrows(AccessDeniedException.class,
@@ -159,5 +195,25 @@ class WebSocketAuthChannelInterceptorTest {
                 null,
                 java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(role))
         );
+    }
+
+    private static User user(UUID id, Role role) {
+        return User.builder()
+                .id(id)
+                .email(id + "@equity.com")
+                .password("secret")
+                .fullName("User")
+                .role(role)
+                .build();
+    }
+
+    private static CaseEntry caseEntry(UUID id, CaseStatus status, User createdBy) {
+        return CaseEntry.builder()
+                .id(id)
+                .referenceNumber("ECV-" + id.toString().substring(0, 8))
+                .clientName("Client")
+                .status(status)
+                .createdBy(createdBy)
+                .build();
     }
 }

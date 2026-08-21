@@ -88,7 +88,7 @@ class CaseServiceAuthTest {
     }
 
     @Test
-    void listCases_committeeWithoutStatus_usesNonDraftOrOwnQuery() {
+    void listCases_committeeWithoutStatus_excludesDraftAndSubmittedUnlessOwn() {
         UUID actorId = UUID.randomUUID();
         User actor = user(actorId, Role.COMMITTEE_MEMBER);
         PageRequest pageable = PageRequest.of(0, 20);
@@ -97,12 +97,18 @@ class CaseServiceAuthTest {
                 new UsernamePasswordAuthenticationToken(actorId.toString(), null)
         );
         when(userRepository.findById(actorId)).thenReturn(Optional.of(actor));
-        when(caseRepository.findByStatusNotOrCreatedById(CaseStatus.DRAFT, actorId, pageable))
+        when(caseRepository.findVisibleExcludingStatusesOrCreatedById(
+                java.util.Set.of(CaseStatus.DRAFT, CaseStatus.SUBMITTED),
+                actorId,
+                pageable))
                 .thenReturn(new PageImpl<>(List.of()));
 
         caseService.listCases(null, pageable);
 
-        verify(caseRepository).findByStatusNotOrCreatedById(CaseStatus.DRAFT, actorId, pageable);
+        verify(caseRepository).findVisibleExcludingStatusesOrCreatedById(
+                java.util.Set.of(CaseStatus.DRAFT, CaseStatus.SUBMITTED),
+                actorId,
+                pageable);
         verify(caseRepository, never()).findAll(pageable);
     }
 
@@ -142,6 +148,72 @@ class CaseServiceAuthTest {
                 () -> caseService.getCase(draftCase.getId()));
 
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    void getCase_forbiddenForChairpersonOnSubmittedCaseNotOwned() {
+        UUID actorId = UUID.randomUUID();
+        User actor = user(actorId, Role.CHAIRPERSON);
+        User creator = user(UUID.randomUUID(), Role.CREDIT_OFFICER);
+        CaseEntry submittedCase = caseEntry(UUID.randomUUID(), CaseStatus.SUBMITTED, creator);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(actorId.toString(), null)
+        );
+        when(userRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(caseRepository.findById(submittedCase.getId())).thenReturn(Optional.of(submittedCase));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> caseService.getCase(submittedCase.getId()));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    void updateStatus_creditOfficerCannotApproveOwnSubmittedCase() {
+        UUID actorId = UUID.randomUUID();
+        User actor = user(actorId, Role.CREDIT_OFFICER);
+        CaseEntry submittedCase = caseEntry(UUID.randomUUID(), CaseStatus.SUBMITTED, actor);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(actorId.toString(), null)
+        );
+        when(userRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(caseRepository.findById(submittedCase.getId())).thenReturn(Optional.of(submittedCase));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> caseService.updateStatus(
+                        submittedCase.getId(),
+                        new com.equitycommittee.voting.api.dto.cases.UpdateCaseStatusRequest(CaseStatus.UNDER_REVIEW)
+                ));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    void updateStatus_managerCanApproveSubmittedCaseForReview() {
+        UUID actorId = UUID.randomUUID();
+        User actor = user(actorId, Role.MANAGER);
+        User creator = user(UUID.randomUUID(), Role.CREDIT_OFFICER);
+        CaseEntry submittedCase = caseEntry(UUID.randomUUID(), CaseStatus.SUBMITTED, creator);
+        LocalDateTime createdAt = LocalDateTime.now();
+        submittedCase.setCreatedAt(createdAt);
+        submittedCase.setUpdatedAt(createdAt);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(actorId.toString(), null)
+        );
+        when(userRepository.findById(actorId)).thenReturn(Optional.of(actor));
+        when(caseRepository.findById(submittedCase.getId())).thenReturn(Optional.of(submittedCase));
+        when(caseRepository.saveAndFlush(submittedCase)).thenReturn(submittedCase);
+
+        CaseResponse response = caseService.updateStatus(
+                submittedCase.getId(),
+                new com.equitycommittee.voting.api.dto.cases.UpdateCaseStatusRequest(CaseStatus.UNDER_REVIEW)
+        );
+
+        assertEquals(CaseStatus.UNDER_REVIEW, response.status());
+        verify(messagingTemplate).convertAndSend("/topic/cases", response);
     }
 
     @Test
@@ -208,7 +280,7 @@ class CaseServiceAuthTest {
         assertNotNull(response.createdAt());
         assertNotNull(response.updatedAt());
         verify(caseRepository).saveAndFlush(any(CaseEntry.class));
-        verify(messagingTemplate).convertAndSend("/topic/cases", response);
+        verify(messagingTemplate, never()).convertAndSend("/topic/cases", response);
     }
 
     @Test

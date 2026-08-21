@@ -94,8 +94,8 @@ class MessageServiceAuthTest {
         UUID parentId = UUID.randomUUID();
         User actor = user(actorId, Role.COMMITTEE_MEMBER);
         User creator = user(UUID.randomUUID(), Role.COMMITTEE_MEMBER);
-        CaseEntry caseEntry = caseEntry(caseId, CaseStatus.SUBMITTED, creator);
-        CaseEntry otherCase = caseEntry(UUID.randomUUID(), CaseStatus.SUBMITTED, creator);
+        CaseEntry caseEntry = caseEntry(caseId, CaseStatus.UNDER_REVIEW, creator);
+        CaseEntry otherCase = caseEntry(UUID.randomUUID(), CaseStatus.UNDER_REVIEW, creator);
         CaseMessage parent = CaseMessage.builder()
                 .id(parentId)
                 .caseEntry(otherCase)

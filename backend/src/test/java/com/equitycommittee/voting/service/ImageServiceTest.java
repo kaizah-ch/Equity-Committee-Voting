@@ -378,7 +378,7 @@ class ImageServiceTest {
                 .build();
         CaseEntry submittedCase = CaseEntry.builder()
                 .id(caseId)
-                .status(CaseStatus.SUBMITTED)
+                .status(CaseStatus.UNDER_REVIEW)
                 .createdBy(creator)
                 .build();
 

@@ -5,10 +5,10 @@ import com.equitycommittee.voting.domain.entity.CaseEntry;
 import com.equitycommittee.voting.domain.entity.CaseImage;
 import com.equitycommittee.voting.domain.entity.User;
 import com.equitycommittee.voting.domain.enums.CaseStatus;
-import com.equitycommittee.voting.domain.enums.Role;
 import com.equitycommittee.voting.domain.repository.CaseImageRepository;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
+import com.equitycommittee.voting.security.RolePermissions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -185,11 +185,8 @@ public class ImageService {
         boolean isUploader = image.getUploadedBy() != null
                 && image.getUploadedBy().getId() != null
                 && image.getUploadedBy().getId().equals(actor.getId());
-        boolean isCaseCreator = image.getCaseEntry() != null
-                && image.getCaseEntry().getCreatedBy() != null
-                && image.getCaseEntry().getCreatedBy().getId() != null
-                && image.getCaseEntry().getCreatedBy().getId().equals(actor.getId());
-        boolean isPrivilegedRole = actor.getRole() == Role.ADMIN || actor.getRole() == Role.CHAIRPERSON;
+        boolean isCaseCreator = RolePermissions.isCaseCreator(actor, image.getCaseEntry());
+        boolean isPrivilegedRole = RolePermissions.isDecisionRole(actor);
 
         if (!isUploader && !isCaseCreator && !isPrivilegedRole) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to modify this image");
@@ -197,10 +194,8 @@ public class ImageService {
     }
 
     private void assertCanUploadImage(User actor, CaseEntry caseEntry) {
-        boolean isCaseCreator = caseEntry.getCreatedBy() != null
-                && caseEntry.getCreatedBy().getId() != null
-                && caseEntry.getCreatedBy().getId().equals(actor.getId());
-        boolean isPrivilegedRole = actor.getRole() == Role.ADMIN || actor.getRole() == Role.CHAIRPERSON;
+        boolean isCaseCreator = RolePermissions.isCaseCreator(actor, caseEntry);
+        boolean isPrivilegedRole = RolePermissions.isDecisionRole(actor);
 
         if (!isCaseCreator && !isPrivilegedRole) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to upload image for this case");
@@ -208,22 +203,19 @@ public class ImageService {
     }
 
     private void assertCanViewImages(User actor, CaseEntry caseEntry) {
-        boolean isCaseCreator = caseEntry.getCreatedBy() != null
-                && caseEntry.getCreatedBy().getId() != null
-                && caseEntry.getCreatedBy().getId().equals(actor.getId());
-        boolean isPrivilegedRole = actor.getRole() == Role.ADMIN || actor.getRole() == Role.CHAIRPERSON;
-        if (isCaseCreator || isPrivilegedRole) {
+        if (RolePermissions.isAdmin(actor) || RolePermissions.isCaseCreator(actor, caseEntry)) {
             return;
         }
 
-        if (caseEntry.getStatus() == CaseStatus.DRAFT) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to view draft case images");
+        if (RolePermissions.isManager(actor) && caseEntry.getStatus() != CaseStatus.DRAFT) {
+            return;
         }
 
-        boolean isCommitteeRole = actor.getRole() == Role.COMMITTEE_MEMBER || actor.getRole() == Role.SECRETARY;
-        if (!isCommitteeRole) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to view case images");
+        if (RolePermissions.isCommitteeViewerRole(actor) && RolePermissions.isManagerApproved(caseEntry)) {
+            return;
         }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to view case images");
     }
 
     private String buildReadUrl(String key) {

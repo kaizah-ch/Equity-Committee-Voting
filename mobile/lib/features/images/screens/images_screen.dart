@@ -129,7 +129,9 @@ class _ImagesScreenState extends State<ImagesScreen>
   }
 
   bool get _isPrivileged =>
-      _currentUserRole == 'ADMIN' || _currentUserRole == 'CHAIRPERSON';
+      _currentUserRole == 'ADMIN' ||
+      _currentUserRole == 'MANAGER' ||
+      _currentUserRole == 'CHAIRPERSON';
 
   bool get _isCaseCreator {
     final createdById = widget.caseModel?.createdById;

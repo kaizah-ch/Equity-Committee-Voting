@@ -118,7 +118,7 @@ class VotingServiceAuthTest {
         UUID actorId = UUID.randomUUID();
         User actor = user(actorId, Role.SECRETARY);
         User creator = user(UUID.randomUUID(), Role.COMMITTEE_MEMBER);
-        CaseEntry caseEntry = caseEntry(UUID.randomUUID(), CaseStatus.SUBMITTED, creator);
+        CaseEntry caseEntry = caseEntry(UUID.randomUUID(), CaseStatus.UNDER_REVIEW, creator);
 
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(actorId.toString(), null)

@@ -6,10 +6,10 @@ import com.equitycommittee.voting.domain.entity.CaseEntry;
 import com.equitycommittee.voting.domain.entity.CaseMessage;
 import com.equitycommittee.voting.domain.entity.User;
 import com.equitycommittee.voting.domain.enums.CaseStatus;
-import com.equitycommittee.voting.domain.enums.Role;
 import com.equitycommittee.voting.domain.repository.CaseMessageRepository;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
+import com.equitycommittee.voting.security.RolePermissions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -82,21 +82,18 @@ public class MessageService {
     }
 
     private void assertCanAccessDiscussion(User actor, CaseEntry caseEntry) {
-        boolean isCaseCreator = caseEntry.getCreatedBy() != null
-                && caseEntry.getCreatedBy().getId() != null
-                && caseEntry.getCreatedBy().getId().equals(actor.getId());
-        boolean isPrivilegedRole = actor.getRole() == Role.ADMIN || actor.getRole() == Role.CHAIRPERSON;
-        if (isCaseCreator || isPrivilegedRole) {
+        if (RolePermissions.isAdmin(actor) || RolePermissions.isCaseCreator(actor, caseEntry)) {
             return;
         }
 
-        if (caseEntry.getStatus() == CaseStatus.DRAFT) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access discussion for draft case");
+        if (RolePermissions.isManager(actor) && caseEntry.getStatus() != CaseStatus.DRAFT) {
+            return;
         }
 
-        boolean isCommitteeRole = actor.getRole() == Role.COMMITTEE_MEMBER || actor.getRole() == Role.SECRETARY;
-        if (!isCommitteeRole) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access case discussion");
+        if (RolePermissions.isCommitteeViewerRole(actor) && RolePermissions.isManagerApproved(caseEntry)) {
+            return;
         }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access case discussion");
     }
 }

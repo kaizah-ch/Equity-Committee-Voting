@@ -11,6 +11,7 @@ import com.equitycommittee.voting.domain.enums.VoteChoice;
 import com.equitycommittee.voting.domain.repository.CaseRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
 import com.equitycommittee.voting.domain.repository.VoteRepository;
+import com.equitycommittee.voting.security.RolePermissions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -214,21 +215,18 @@ public class VotingService {
     }
 
     private void assertCanViewVotes(User actor, CaseEntry caseEntry) {
-        boolean isCaseCreator = caseEntry.getCreatedBy() != null
-                && caseEntry.getCreatedBy().getId() != null
-                && caseEntry.getCreatedBy().getId().equals(actor.getId());
-        boolean isPrivilegedRole = actor.getRole() == Role.ADMIN || actor.getRole() == Role.CHAIRPERSON;
-        if (isCaseCreator || isPrivilegedRole) {
+        if (RolePermissions.isAdmin(actor) || RolePermissions.isCaseCreator(actor, caseEntry)) {
             return;
         }
 
-        if (caseEntry.getStatus() == CaseStatus.DRAFT) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access votes for draft case");
+        if (RolePermissions.isManager(actor) && caseEntry.getStatus() != CaseStatus.DRAFT) {
+            return;
         }
 
-        boolean isCommitteeRole = actor.getRole() == Role.COMMITTEE_MEMBER || actor.getRole() == Role.SECRETARY;
-        if (!isCommitteeRole) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access case votes");
+        if (RolePermissions.isCommitteeViewerRole(actor) && RolePermissions.isManagerApproved(caseEntry)) {
+            return;
         }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to access case votes");
     }
 }

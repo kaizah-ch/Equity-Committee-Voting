@@ -4,6 +4,7 @@ import com.equitycommittee.voting.domain.entity.CaseEntry;
 import com.equitycommittee.voting.domain.entity.Notification;
 import com.equitycommittee.voting.domain.entity.User;
 import com.equitycommittee.voting.domain.enums.NotificationType;
+import com.equitycommittee.voting.domain.enums.Role;
 import com.equitycommittee.voting.domain.repository.NotificationRepository;
 import com.equitycommittee.voting.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +32,15 @@ public class NotificationService {
 
     @Async
     public void notifyCaseCreated(CaseEntry caseEntry) {
-        List<User> allUsers = userRepository.findAll();
-        allUsers.forEach(user -> createNotification(user, NotificationType.CASE_CREATED,
+        List<User> approvalUsers = userRepository.findAll().stream()
+                .filter(user -> user.getRole() == Role.ADMIN
+                        || user.getRole() == Role.MANAGER
+                        || (caseEntry.getCreatedBy() != null
+                        && caseEntry.getCreatedBy().getId().equals(user.getId())))
+                .toList();
+        approvalUsers.forEach(user -> createNotification(user, NotificationType.CASE_CREATED,
                 "New Case: " + caseEntry.getReferenceNumber(),
-                "A new case has been submitted: " + caseEntry.getClientName(),
+                "A new case is waiting for manager approval: " + caseEntry.getClientName(),
                 caseEntry));
     }
 

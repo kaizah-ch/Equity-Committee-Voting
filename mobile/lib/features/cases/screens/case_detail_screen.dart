@@ -53,11 +53,64 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   bool get _canModifyCase {
     final data = _caseModel;
     if (data == null) return false;
-    final role = _currentUserRole;
-    final isPrivileged = role == 'ADMIN' || role == 'CHAIRPERSON';
-    final isCreator =
-        _currentUserId != null && _currentUserId == data.createdById;
-    return isPrivileged || isCreator;
+    return _canEditCase(data);
+  }
+
+  bool get _isManagerApprovalRole =>
+      _currentUserRole == 'ADMIN' || _currentUserRole == 'MANAGER';
+
+  bool get _isDecisionRole =>
+      _currentUserRole == 'ADMIN' ||
+      _currentUserRole == 'MANAGER' ||
+      _currentUserRole == 'CHAIRPERSON';
+
+  bool get _isCaseCreator {
+    final data = _caseModel;
+    return data != null &&
+        _currentUserId != null &&
+        _currentUserId == data.createdById;
+  }
+
+  bool _canEditCase(CaseModel data) {
+    if (_isManagerApprovalRole) return true;
+    if (data.status == CaseStatus.underReview &&
+        _currentUserRole == 'CHAIRPERSON') {
+      return true;
+    }
+    return _isCaseCreator &&
+        (data.status == CaseStatus.draft ||
+            data.status == CaseStatus.submitted);
+  }
+
+  bool _canChangeStatus(CaseStatus target) {
+    final data = _caseModel;
+    if (data == null || target == data.status) return false;
+    final isCreator = _isCaseCreator;
+    final current = data.status;
+
+    if (current == CaseStatus.draft && target == CaseStatus.submitted) {
+      return isCreator || _isManagerApprovalRole;
+    }
+    if (current == CaseStatus.submitted && target == CaseStatus.draft) {
+      return isCreator || _isManagerApprovalRole;
+    }
+    if (current == CaseStatus.submitted && target == CaseStatus.underReview) {
+      return _isManagerApprovalRole;
+    }
+    if (current == CaseStatus.underReview ||
+        current == CaseStatus.votingOpen ||
+        current == CaseStatus.approved ||
+        current == CaseStatus.rejected ||
+        current == CaseStatus.deferred) {
+      return _isDecisionRole;
+    }
+    return false;
+  }
+
+  List<CaseStatus> get _availableStatusTransitions {
+    final data = _caseModel;
+    if (data == null) return const [];
+    return data.status.nextStatuses.where(_canChangeStatus).toList();
   }
 
   bool get _canDeleteCase => _currentUserRole == 'ADMIN' && _caseModel != null;
@@ -250,7 +303,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
                   loading: _loading,
                   updatingStatus: _updatingStatus,
                   error: _error,
-                  canModify: _canModifyCase,
+                  availableTransitions: _availableStatusTransitions,
                   onRetry: _loadCase,
                   onChangeStatus: _changeStatus,
                 ),
@@ -275,7 +328,7 @@ class _CaseOverviewCard extends StatelessWidget {
   final bool loading;
   final bool updatingStatus;
   final String? error;
-  final bool canModify;
+  final List<CaseStatus> availableTransitions;
   final Future<void> Function() onRetry;
   final ValueChanged<CaseStatus> onChangeStatus;
 
@@ -284,7 +337,7 @@ class _CaseOverviewCard extends StatelessWidget {
     required this.loading,
     required this.updatingStatus,
     required this.error,
-    required this.canModify,
+    required this.availableTransitions,
     required this.onRetry,
     required this.onChangeStatus,
   });
@@ -326,8 +379,7 @@ class _CaseOverviewCard extends StatelessWidget {
         : DateFormat('dd MMM yyyy, HH:mm')
             .format(data.votingDeadline!.toLocal());
 
-    final transitions =
-        canModify ? data.status.nextStatuses : const <CaseStatus>[];
+    final transitions = availableTransitions;
 
     return Card(
       child: Padding(

@@ -1,10 +1,19 @@
 import 'package:dio/dio.dart';
 
-enum UserRole { admin, committeeMember, chairperson, secretary }
+enum UserRole {
+  admin,
+  creditOfficer,
+  manager,
+  committeeMember,
+  chairperson,
+  secretary,
+}
 
 extension UserRoleDisplay on UserRole {
   String get apiName => switch (this) {
         UserRole.admin => 'ADMIN',
+        UserRole.creditOfficer => 'CREDIT_OFFICER',
+        UserRole.manager => 'MANAGER',
         UserRole.committeeMember => 'COMMITTEE_MEMBER',
         UserRole.chairperson => 'CHAIRPERSON',
         UserRole.secretary => 'SECRETARY',
@@ -12,6 +21,8 @@ extension UserRoleDisplay on UserRole {
 
   String get label => switch (this) {
         UserRole.admin => 'Admin',
+        UserRole.creditOfficer => 'Credit Officer',
+        UserRole.manager => 'Manager',
         UserRole.committeeMember => 'Committee Member',
         UserRole.chairperson => 'Chairperson',
         UserRole.secretary => 'Secretary',
